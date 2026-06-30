@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 32" fill="none">
+  <rect width="28" height="28" x="0" y="2" rx="8" fill="#3b82f6"/>
+  <text x="14" y="21" text-anchor="middle" fill="white" font-family="system-ui,sans-serif" font-size="14" font-weight="700">S</text>
+  <text x="40" y="22" fill="#f6f3ef" font-family="system-ui,sans-serif" font-size="16" font-weight="600">Seedance API</text>
+</svg>

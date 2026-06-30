@@ -1,0 +1,27 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "seedance-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-06-30",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "seedance-db",
+      "database_id": "REPLACE_WITH_D1_ID"
+    }
+  ],
+  "vars": {
+    "API_BASE_URL": "https://api.seedanceapi.us"
+  },
+  "routes": [
+    {
+      "pattern": "seedanceapi.us",
+      "custom_domain": true
+    }
+  ]
+}

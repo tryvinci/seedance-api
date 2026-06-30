@@ -1,0 +1,8 @@
+# Copy to .dev.vars.production — prod API Worker secrets reference
+# cp .dev.vars.production.example .dev.vars.production
+# Deploy secrets: cd apps/api && npx wrangler secret bulk .dev.vars.production
+
+CLERK_SECRET_KEY=sk_live_
+CLERK_JWT_KEY=
+MODELARK_API_KEY=
+WAVESPEED_API_KEY=

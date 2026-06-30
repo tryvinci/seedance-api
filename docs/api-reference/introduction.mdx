@@ -1,0 +1,39 @@
+---
+title: API reference
+description: OpenAPI specification for the Seedance REST API.
+---
+
+The Seedance API is documented with OpenAPI 3.1. Use the interactive playground in the sidebar to try endpoints with your API key.
+
+## Base URL
+
+```
+https://api.seedanceapi.us
+```
+
+## Authentication
+
+All endpoints except `/health` and `/openapi.json` require:
+
+```http
+Authorization: Bearer ak_YOUR_API_KEY
+```
+
+## OpenAPI spec
+
+Download the spec directly:
+
+```
+https://api.seedanceapi.us/openapi.json
+```
+
+## Core endpoints
+
+| Method | Path | Description |
+| --- | --- | --- |
+| `GET` | `/v1/models` | List available models |
+| `GET` | `/v1/credits` | Get credit balance |
+| `POST` | `/v1/videos` | Submit video generation |
+| `POST` | `/v1/images` | Generate image |
+| `GET` | `/v1/generations/:id` | Get generation status |
+| `GET` | `/v1/generations` | List recent generations |

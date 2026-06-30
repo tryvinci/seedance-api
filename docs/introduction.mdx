@@ -1,0 +1,45 @@
+---
+title: Introduction
+description: Production REST API for SeedDance video and Seedream image models.
+---
+
+Seedance API gives you programmatic access to ByteDance **SeedDance** (video) and **Seedream** (image) models through a single REST interface.
+
+## What you get
+
+- **Unified models** — SeedDance 2.5, 2.0, 1.x and Seedream 5.0, 4.x with consistent request shapes
+- **Prepaid credits** — buy credits once, pay per generation
+- **Clerk API keys** — users create `ak_...` keys in the dashboard
+- **Async video jobs** — submit, poll, receive webhooks when complete
+- **Sync images** — get results in the same response
+- **MCP server** — connect Cursor, Claude Desktop, and other agents at `https://api.seedanceapi.us/mcp`
+
+## Base URLs
+
+| Service | URL |
+| --- | --- |
+| API | `https://api.seedanceapi.us` |
+| Website | `https://seedanceapi.us` |
+| Docs | `https://docs.seedanceapi.us` |
+
+## Quick example
+
+```bash
+curl https://api.seedanceapi.us/v1/models \
+  -H "Authorization: Bearer ak_YOUR_API_KEY"
+```
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Create a key, buy credits, and make your first call.
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Clerk API keys and Bearer token auth.
+  </Card>
+  <Card title="Video generation" icon="video" href="/videos">
+    Async `/v1/videos` jobs with polling and webhooks.
+  </Card>
+  <Card title="For agents" icon="robot" href="/agents">
+    MCP config and copy-paste agent starters.
+  </Card>
+</CardGroup>

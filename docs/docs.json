@@ -1,0 +1,109 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "Seedance API",
+  "description": "REST API for SeedDance video and Seedream image generation.",
+  "colors": {
+    "primary": "#2563eb",
+    "light": "#3b82f6",
+    "dark": "#1d4ed8"
+  },
+  "background": {
+    "color": {
+      "light": "#fafaf9",
+      "dark": "#0c0e14"
+    }
+  },
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "https://seedanceapi.us"
+  },
+  "favicon": "/favicon.svg",
+  "navbar": {
+    "links": [
+      {
+        "label": "Models",
+        "href": "https://seedanceapi.us/models"
+      },
+      {
+        "label": "Pricing",
+        "href": "https://seedanceapi.us/pricing"
+      },
+      {
+        "label": "For Agents",
+        "href": "https://seedanceapi.us/agents"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Dashboard",
+      "href": "https://seedanceapi.us/dashboard"
+    }
+  },
+  "footer": {
+    "links": [
+      {
+        "header": "Product",
+        "items": [
+          { "label": "Website", "href": "https://seedanceapi.us" },
+          { "label": "Models", "href": "https://seedanceapi.us/models" },
+          { "label": "Pricing", "href": "https://seedanceapi.us/pricing" }
+        ]
+      },
+      {
+        "header": "Developers",
+        "items": [
+          { "label": "OpenAPI", "href": "https://api.seedanceapi.us/openapi.json" },
+          { "label": "llms.txt", "href": "https://seedanceapi.us/llms.txt" },
+          { "label": "MCP", "href": "https://seedanceapi.us/agents" }
+        ]
+      }
+    ]
+  },
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Getting started",
+            "pages": ["introduction", "quickstart", "authentication"]
+          },
+          {
+            "group": "Guides",
+            "pages": ["videos", "images", "models", "errors", "agents"]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["api-reference/introduction"]
+          },
+          {
+            "group": "Endpoints",
+            "openapi": {
+              "source": "https://api.seedanceapi.us/openapi.json"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "api": {
+    "playground": {
+      "display": "interactive"
+    },
+    "examples": {
+      "languages": ["curl", "javascript", "python"]
+    },
+    "mdx": {
+      "auth": {
+        "method": "bearer"
+      }
+    }
+  }
+}

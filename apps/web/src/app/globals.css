@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: 40 20% 96%;
+  --paper-2: 40 14% 93%;
+  --paper-edge: 40 10% 88%;
+  --ink: 220 18% 11%;
+  --ink-2: 220 10% 28%;
+  --ink-soft: 220 8% 42%;
+  --accent: 213 94% 52%;
+  --accent-deep: 221 83% 42%;
+  --hero: 225 22% 7%;
+}
+
+body {
+  background: hsl(var(--paper));
+  color: hsl(var(--ink));
+}
+
+.paper-grain {
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    hsl(var(--ink) / 0.03) 1px,
+    transparent 0
+  );
+  background-size: 24px 24px;
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-blue-500 to-blue-600 bg-clip-text text-transparent;
+  }
+}
+
+/* Prose for non-Mintlify pages */
+.prose-site {
+  @apply max-w-none text-ink-2;
+}
+
+.prose-site h1 {
+  @apply font-display text-4xl font-normal tracking-tight text-ink;
+}
+
+.prose-site h2 {
+  @apply mt-10 font-display text-2xl font-normal text-ink;
+}
+
+.prose-site p {
+  @apply leading-relaxed text-ink-soft;
+}
+
+.prose-site a {
+  @apply text-accent underline-offset-2 hover:underline;
+}
+
+.prose-site pre {
+  @apply overflow-x-auto rounded-xl border border-paper-edge bg-hero p-4 text-sm text-white;
+}
+
+.prose-site code {
+  @apply rounded bg-paper-2 px-1.5 py-0.5 font-mono text-sm text-ink;
+}
+
+.prose-site pre code {
+  @apply bg-transparent p-0 text-inherit;
+}

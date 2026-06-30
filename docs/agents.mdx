@@ -1,0 +1,63 @@
+---
+title: For agents & MCP
+description: Connect AI agents via Model Context Protocol.
+---
+
+Seedance API exposes an MCP server at `https://api.seedanceapi.us/mcp` for Cursor, Claude Desktop, and other MCP-compatible agents.
+
+## MCP server config
+
+Add to your MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "seedance": {
+      "url": "https://api.seedanceapi.us/mcp",
+      "headers": {
+        "Authorization": "Bearer ak_YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+## Available tools
+
+| Tool | Description |
+| --- | --- |
+| `list_models` | Browse SeedDance/Seedream models |
+| `generate_video` | Submit async video job |
+| `generate_image` | Generate image synchronously |
+| `get_generation` | Poll job status |
+
+## Cursor rule
+
+Paste into `.cursor/rules/seedance.mdc`:
+
+```markdown
+# Seedance API
+
+Use the Seedance MCP server at https://api.seedanceapi.us/mcp.
+
+Auth: Authorization: Bearer ak_...
+
+Models:
+- seedance-2.5/text-to-video (alias to 2.0)
+- seedance-2.0/text-to-video
+- seedream-5.0/text-to-image
+```
+
+## Downloadable starters
+
+- [SKILL.md](https://seedanceapi.us/agents/SKILL.md) — agent skill file
+- [AGENTS.md](https://seedanceapi.us/agents/AGENTS.md) — autonomous workflow instructions
+
+## Direct REST
+
+```bash
+curl -X POST https://api.seedanceapi.us/v1/videos \
+  -H "Authorization: Bearer $SEEDANCE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"model":"seedance-2.5/text-to-video","prompt":"..."}'
+```

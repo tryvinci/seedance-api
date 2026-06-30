@@ -1,0 +1,55 @@
+---
+title: Quickstart
+description: Make your first Seedance API call in under five minutes.
+---
+
+## 1. Create an account and API key
+
+Sign up at [seedanceapi.us](https://seedanceapi.us), open [Dashboard → API keys](https://seedanceapi.us/dashboard), and create a key.
+
+Copy the secret (`ak_...`) immediately — it is shown only once.
+
+## 2. Buy credits
+
+Purchase a credit pack on the [pricing page](https://seedanceapi.us/pricing). Credits are deducted per generation based on the model.
+
+## 3. Generate a video
+
+```bash
+curl -X POST https://api.seedanceapi.us/v1/videos \
+  -H "Authorization: Bearer ak_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "seedance-2.5/text-to-video",
+    "prompt": "A cinematic drone shot over misty mountains",
+    "aspect_ratio": "16:9",
+    "resolution": "720p",
+    "duration": 5
+  }'
+```
+
+The response is `202 Accepted` with a generation `id` and `status: pending`.
+
+## 4. Poll for results
+
+```bash
+curl https://api.seedanceapi.us/v1/generations/GENERATION_ID \
+  -H "Authorization: Bearer ak_YOUR_API_KEY"
+```
+
+When `status` is `completed`, `output_url` contains your video.
+
+## 5. Generate an image
+
+Images return synchronously with `200 OK`:
+
+```bash
+curl -X POST https://api.seedanceapi.us/v1/images \
+  -H "Authorization: Bearer ak_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "seedream-5.0/text-to-image",
+    "prompt": "A serene mountain landscape at sunrise",
+    "size": "2K"
+  }'
+```

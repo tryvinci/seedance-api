@@ -1,0 +1,16 @@
+node_modules/
+.pnpm-store/
+dist/
+.wrangler/
+.open-next/
+.next/
+*.tsbuildinfo
+.dev.vars
+.dev.vars.production
+.env.local
+.env.production
+*.local
+.DS_Store
+.env
+!.env*.example
+!.dev.vars*.example

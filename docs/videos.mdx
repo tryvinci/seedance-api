@@ -1,0 +1,53 @@
+---
+title: Video generation
+description: Submit async video jobs with POST /v1/videos.
+---
+
+`POST /v1/videos` submits an asynchronous video generation job. Credits are held when the job starts and committed when it completes.
+
+## Request body
+
+```json
+{
+  "model": "seedance-2.5/text-to-video",
+  "prompt": "Your prompt here",
+  "aspect_ratio": "16:9",
+  "resolution": "720p",
+  "duration": 5,
+  "generate_audio": false,
+  "image_url": "https://...",
+  "video_url": "https://..."
+}
+```
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `model` | Yes | Model ID, e.g. `seedance-2.5/text-to-video` |
+| `prompt` | For text-to-video | Text description of the scene |
+| `aspect_ratio` | No | e.g. `16:9`, `9:16`, `1:1` |
+| `resolution` | No | e.g. `720p`, `1080p` |
+| `duration` | No | Length in seconds |
+| `image_url` | For image-to-video | Source image URL |
+| `video_url` | For video-to-video | Source video URL |
+
+## Response (202)
+
+```json
+{
+  "id": "uuid",
+  "status": "pending",
+  "model": "seedance-2.5/text-to-video",
+  "kind": "video",
+  "credits_cost": 120
+}
+```
+
+## Poll status
+
+`GET /v1/generations/:id` until `status` is `completed` or `failed`.
+
+When complete, the response includes `output_url` pointing to the hosted media file.
+
+## Webhooks
+
+Configure a webhook URL in your [dashboard](https://seedanceapi.us/dashboard) to receive completion events instead of polling.

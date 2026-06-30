@@ -1,0 +1,38 @@
+---
+title: Image generation
+description: Generate images synchronously with POST /v1/images.
+---
+
+`POST /v1/images` generates images synchronously. Credits are deducted when the request succeeds.
+
+## Request body
+
+```json
+{
+  "model": "seedream-5.0/text-to-image",
+  "prompt": "Your prompt here",
+  "size": "2K",
+  "image": "https://...",
+  "output_format": "jpeg"
+}
+```
+
+| Field | Required | Description |
+| --- | --- | --- |
+| `model` | Yes | Model ID, e.g. `seedream-5.0/text-to-image` |
+| `prompt` | For text-to-image | Text description |
+| `size` | No | Output size, e.g. `2K` |
+| `image` | For image-to-image | Source image URL |
+| `output_format` | No | `jpeg` or `png` |
+
+## Response (200)
+
+```json
+{
+  "id": "uuid",
+  "status": "completed",
+  "model": "seedream-5.0/text-to-image",
+  "output_urls": ["https://..."],
+  "credits_cost": 15
+}
+```
