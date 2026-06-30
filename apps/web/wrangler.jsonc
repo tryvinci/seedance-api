@@ -1,7 +1,7 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "seedance-web",
-  "main": ".open-next/worker.js",
+  "main": "worker.js",
   "compatibility_date": "2025-06-30",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -16,7 +16,9 @@
     }
   ],
   "vars": {
-    "API_BASE_URL": "https://api.seedanceapi.us"
+    "API_BASE_URL": "https://api.seedanceapi.us",
+    "CUSTOM_DOMAIN": "seedanceapi.us",
+    "MINTLIFY_DOCS_HOST": "seedance-api.mintlify.app"
   },
   "routes": [
     {

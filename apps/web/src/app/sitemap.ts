@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://seedanceapi.us";
-  const docsBase = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://docs.seedanceapi.us";
+  const docsBase = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://seedanceapi.us/docs";
 
   const marketingPages = ["", "/models", "/pricing", "/agents", "/llms.txt", "/llms-full.txt"];
   const docsPages = [

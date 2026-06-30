@@ -5,7 +5,8 @@
 | App | Domain | Platform |
 |-----|--------|----------|
 | API Worker | `api.seedanceapi.us` | Cloudflare Workers |
-| Website | `seedanceapi.us` | Cloudflare Workers (OpenNext) |
+| Website + docs proxy | `seedanceapi.us` | Cloudflare Workers (OpenNext) |
+| Docs (Mintlify) | `seedanceapi.us/docs` | Mintlify, proxied by web worker |
 
 ## Prerequisites
 
@@ -116,7 +117,17 @@ In Cloudflare dashboard, add custom domains:
 - URL: `https://seedanceapi.us/api/webhooks/dodo`
 - Events: `payment.succeeded`, `checkout.completed`
 
-## 8. Local development
+## 8. Mintlify docs (subpath)
+
+1. Connect GitHub repo **tryvinci/seedance-api** in [Mintlify Dashboard](https://dashboard.mintlify.com)
+2. Docs directory: `docs`
+3. Domain settings: subpath `/docs` on `seedanceapi.us`
+4. Set `MINTLIFY_DOCS_HOST` in `apps/web/wrangler.jsonc` to your `*.mintlify.app` host
+5. Redeploy web worker after Mintlify is connected
+
+See [docs/README.md](./docs/README.md) for details.
+
+## 9. Local development
 
 ```bash
 # Terminal 1: API
@@ -124,6 +135,9 @@ pnpm dev:api
 
 # Terminal 2: Web
 pnpm dev:web
+
+# Terminal 3: Mintlify docs (optional)
+pnpm dev:docs
 ```
 
 ## Secrets checklist

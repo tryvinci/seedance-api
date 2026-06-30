@@ -1,33 +1,44 @@
 # Mintlify documentation
 
-Documentation for Seedance API, hosted on [Mintlify](https://mintlify.com) at **docs.seedanceapi.us**.
+Docs live at **https://seedanceapi.us/docs** (subpath on the main domain), proxied from Mintlify via the Cloudflare worker in `apps/web/worker.js`.
 
 ## Local preview
 
 ```bash
-pnpm install
-pnpm dev:docs
+pnpm dev:docs   # http://localhost:3333
 ```
 
-Opens at http://localhost:3333
+Set in `apps/web/.env.local`:
 
-## Deploy
+```env
+NEXT_PUBLIC_DOCS_URL=http://localhost:3333
+```
 
-1. Push this repo to GitHub
-2. Connect the repo in [Mintlify Dashboard](https://dashboard.mintlify.com)
-3. Set the **docs directory** to `/docs`
-4. Add custom domain `docs.seedanceapi.us` (CNAME to Mintlify)
+## Deploy (Mintlify + subpath)
+
+1. Connect **tryvinci/seedance-api** in [Mintlify Dashboard](https://dashboard.mintlify.com)
+2. Set docs directory to **`docs`**
+3. Under **Settings → Domain**, configure a **subpath** deployment:
+   - Domain: `seedanceapi.us`
+   - Path: `/docs`
+4. Note your Mintlify host (e.g. `seedance-api.mintlify.app`) and set it in `apps/web/wrangler.jsonc`:
+
+```jsonc
+"MINTLIFY_DOCS_HOST": "seedance-api.mintlify.app"
+```
+
+5. Deploy the web worker — `worker.js` proxies `/docs/*` to Mintlify with `X-Forwarded-Host: seedanceapi.us`
+
+No separate `docs.seedanceapi.us` DNS record is needed.
 
 ## Structure
 
 ```
 docs/
-  docs.json          # Mintlify config (navigation, theme, OpenAPI)
+  docs.json
   introduction.mdx
   quickstart.mdx
   ...
-  api-reference/
-    introduction.mdx
 ```
 
-OpenAPI is loaded from `https://api.seedanceapi.us/openapi.json` for the interactive API reference.
+OpenAPI reference loads from `https://api.seedanceapi.us/openapi.json`.

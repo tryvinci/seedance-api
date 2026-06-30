@@ -12,7 +12,7 @@ export async function GET() {
 - API: https://api.seedanceapi.us
 - OpenAPI: https://api.seedanceapi.us/openapi.json
 - MCP: https://api.seedanceapi.us/mcp
-- Docs: https://docs.seedanceapi.us
+- Docs: https://seedanceapi.us/docs
 - Pricing: https://seedanceapi.us/pricing
 - For Agents: https://seedanceapi.us/agents
 
@@ -47,8 +47,8 @@ ${models
 - get_generation
 
 ## Full docs
-- Quickstart: https://docs.seedanceapi.us/quickstart
-- Authentication: https://docs.seedanceapi.us/authentication
+- Quickstart: https://seedanceapi.us/docs/quickstart
+- Authentication: https://seedanceapi.us/docs/authentication
 - Full model list: https://seedanceapi.us/llms-full.txt
 `;
 

@@ -8,7 +8,7 @@ State-of-the-art REST API for SeedDance video and Seedream image generation mode
 apps/
   api/     — Hono Worker at api.seedanceapi.us
   web/     — Next.js site at seedanceapi.us
-docs/      — Mintlify docs at docs.seedanceapi.us
+docs/      — Mintlify docs at seedanceapi.us/docs
 packages/
   models/     — Model catalog, pricing, OpenAPI spec
   providers/  — ModelArk + WaveSpeed clients with fallback
