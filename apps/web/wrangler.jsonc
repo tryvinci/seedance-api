@@ -2,6 +2,7 @@
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "seedance-web",
   "main": "worker.js",
+  "account_id": "9c8c17cfa5b8c29c830e072acce42a3d",
   "compatibility_date": "2025-06-30",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -12,13 +13,13 @@
     {
       "binding": "DB",
       "database_name": "seedance-db",
-      "database_id": "REPLACE_WITH_D1_ID"
+      "database_id": "3e049b4b-c528-441e-992b-363a468ade9a"
     }
   ],
   "vars": {
     "API_BASE_URL": "https://api.seedanceapi.us",
     "CUSTOM_DOMAIN": "seedanceapi.us",
-    "MINTLIFY_DOCS_HOST": "seedance-api.mintlify.app"
+    "MINTLIFY_DOCS_HOST": "seedanceus.mintlify.site"
   },
   "routes": [
     {

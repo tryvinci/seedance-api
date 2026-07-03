@@ -4,7 +4,7 @@
   "main": "src/index.ts",
   "compatibility_date": "2025-06-30",
   "compatibility_flags": ["nodejs_compat"],
-  "account_id": "bdb17a3571b02ee22e6641ccd2bb50c5",
+  "account_id": "9c8c17cfa5b8c29c830e072acce42a3d",
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
@@ -17,14 +17,14 @@
     {
       "binding": "DB",
       "database_name": "seedance-db",
-      "database_id": "00000000-0000-4000-8000-000000000001",
+      "database_id": "3e049b4b-c528-441e-992b-363a468ade9a",
       "migrations_dir": "../../packages/db/migrations"
     }
   ],
   "kv_namespaces": [
     {
       "binding": "CACHE",
-      "id": "00000000000000000000000000000001"
+      "id": "11b3de9dccb34c499a1190b3e41bbd33"
     }
   ],
   "r2_buckets": [
@@ -38,6 +38,12 @@
       "binding": "POLL_WORKFLOW",
       "name": "poll-generation",
       "class_name": "PollGenerationWorkflow"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "api.seedanceapi.us",
+      "custom_domain": true
     }
   ],
   "dev": {

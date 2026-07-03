@@ -21,10 +21,10 @@ NEXT_PUBLIC_DOCS_URL=http://localhost:3333
 3. Under **Settings → Domain**, configure a **subpath** deployment:
    - Domain: `seedanceapi.us`
    - Path: `/docs`
-4. Note your Mintlify host (e.g. `seedance-api.mintlify.app`) and set it in `apps/web/wrangler.jsonc`:
+4. Copy your Mintlify host from the dashboard **Overview** page (e.g. `seedanceus.mintlify.site`) and set it in `apps/web/wrangler.jsonc`:
 
 ```jsonc
-"MINTLIFY_DOCS_HOST": "seedance-api.mintlify.app"
+"MINTLIFY_DOCS_HOST": "seedanceus.mintlify.site"
 ```
 
 5. Deploy the web worker — `worker.js` proxies `/docs/*` to Mintlify with `X-Forwarded-Host: seedanceapi.us`

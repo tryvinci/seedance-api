@@ -122,7 +122,7 @@ In Cloudflare dashboard, add custom domains:
 1. Connect GitHub repo **tryvinci/seedance-api** in [Mintlify Dashboard](https://dashboard.mintlify.com)
 2. Docs directory: `docs`
 3. Domain settings: subpath `/docs` on `seedanceapi.us`
-4. Set `MINTLIFY_DOCS_HOST` in `apps/web/wrangler.jsonc` to your `*.mintlify.app` host
+4. Set `MINTLIFY_DOCS_HOST` in `apps/web/wrangler.jsonc` to your `*.mintlify.site` host (from Mintlify Overview)
 5. Redeploy web worker after Mintlify is connected
 
 See [docs/README.md](./docs/README.md) for details.

@@ -2,7 +2,7 @@ import openNextHandler from "./.open-next/worker.js";
 
 /**
  * Proxies /docs/* to Mintlify for subpath hosting on seedanceapi.us/docs.
- * Set MINTLIFY_DOCS_HOST in wrangler (e.g. seedance-api.mintlify.app).
+ * Set MINTLIFY_DOCS_HOST in wrangler (e.g. seedanceus.mintlify.site).
  */
 async function proxyMintlifyDocs(request, env) {
   const mintlifyHost = env.MINTLIFY_DOCS_HOST;
