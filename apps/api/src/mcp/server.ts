@@ -20,10 +20,14 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
 
   const clerk = createClerkClient({
     secretKey: env.CLERK_SECRET_KEY,
-    jwtKey: env.CLERK_JWT_KEY,
+    jwtKey: env.CLERK_JWT_KEY?.replace(/\\n/g, "\n"),
   });
+  const parties = (env.AUTHORIZED_PARTIES ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
   const state = await clerk.authenticateRequest(request, {
-    authorizedParties: [env.AUTHORIZED_PARTIES],
+    authorizedParties: parties,
     acceptsToken: ["api_key"],
   });
   if (!state.isAuthenticated) {
