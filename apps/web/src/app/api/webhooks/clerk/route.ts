@@ -1,11 +1,12 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
-import { drizzle } from "drizzle-orm/d1";
 import { ensureWallet } from "@seedance/db";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { isDevWebhookBypass } from "@/lib/webhook-dev";
 import { ensureDefaultApiKey } from "@/lib/ensure-default-api-key";
+import { getDb } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const payload = await req.text();
@@ -48,8 +49,7 @@ export async function POST(req: Request) {
   if (event.type === "user.created") {
     const userId = event.data.id;
     try {
-      const { env } = await getCloudflareContext({ async: true });
-      const db = drizzle(env.DB);
+      const db = await getDb();
       await ensureWallet(db, userId);
     } catch (err) {
       console.error("Failed to provision wallet:", err);

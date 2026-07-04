@@ -1,4 +1,4 @@
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import {
   wallets,
@@ -22,18 +22,57 @@ export async function ensureWallet(db: Db, ownerId: string) {
     .get();
   if (existing) return existing;
   const ts = now();
-  await db.insert(wallets).values({
-    ownerId,
-    creditBalance: 0,
-    createdAt: ts,
-    updatedAt: ts,
-  });
+  try {
+    await db.insert(wallets).values({
+      ownerId,
+      creditBalance: 0,
+      createdAt: ts,
+      updatedAt: ts,
+    });
+  } catch {
+    // Concurrent insert — fall through to select.
+  }
   return db.select().from(wallets).where(eq(wallets.ownerId, ownerId)).get();
 }
 
+/**
+ * Balance from committed + pending ledger rows (pending holds already deducted).
+ * Refunded rows are excluded (wallet was credited back separately).
+ */
+export async function sumLedgerBalance(db: Db, ownerId: string): Promise<number> {
+  const row = await db
+    .select({
+      total: sql<number>`coalesce(sum(${creditLedger.delta}), 0)`,
+    })
+    .from(creditLedger)
+    .where(
+      and(
+        eq(creditLedger.ownerId, ownerId),
+        sql`${creditLedger.status} IN ('committed', 'pending')`,
+      ),
+    )
+    .get();
+  return Number(row?.total ?? 0);
+}
+
+/** Force wallet.credit_balance to match the ledger (source of truth). */
+export async function reconcileWalletBalance(
+  db: Db,
+  ownerId: string,
+): Promise<number> {
+  await ensureWallet(db, ownerId);
+  const balance = await sumLedgerBalance(db, ownerId);
+  const ts = now();
+  await db
+    .update(wallets)
+    .set({ creditBalance: balance, updatedAt: ts })
+    .where(eq(wallets.ownerId, ownerId));
+  return balance;
+}
+
 export async function getWalletBalance(db: Db, ownerId: string) {
-  const wallet = await ensureWallet(db, ownerId);
-  return wallet?.creditBalance ?? 0;
+  // Always derive from ledger so a missed wallet update cannot zero out funds.
+  return reconcileWalletBalance(db, ownerId);
 }
 
 export async function addCredits(
@@ -43,40 +82,55 @@ export async function addCredits(
   reason: string,
   dodoPaymentId?: string,
 ) {
-  // Idempotent on payment id so webhook retries do not double-credit.
+  if (!Number.isFinite(amount) || amount === 0) {
+    return reconcileWalletBalance(db, ownerId);
+  }
+
+  // Idempotent on payment id so webhook + confirm do not double-credit.
   if (dodoPaymentId) {
     const existing = await db
       .select()
       .from(creditLedger)
       .where(eq(creditLedger.dodoPaymentId, dodoPaymentId))
       .get();
-    if (existing) return existing.id;
+    if (existing) {
+      // Still reconcile in case a prior write inserted ledger but missed wallet.
+      await reconcileWalletBalance(db, ownerId);
+      return existing.id;
+    }
   }
 
   await ensureWallet(db, ownerId);
   const ts = now();
   const ledgerId = crypto.randomUUID();
-  await db.insert(creditLedger).values({
-    id: ledgerId,
-    ownerId,
-    delta: amount,
-    reason,
-    dodoPaymentId: dodoPaymentId ?? null,
-    status: "committed",
-    createdAt: ts,
-  });
-  const wallet = await db
-    .select()
-    .from(wallets)
-    .where(eq(wallets.ownerId, ownerId))
-    .get();
-  await db
-    .update(wallets)
-    .set({
-      creditBalance: (wallet?.creditBalance ?? 0) + amount,
-      updatedAt: ts,
-    })
-    .where(eq(wallets.ownerId, ownerId));
+
+  try {
+    await db.insert(creditLedger).values({
+      id: ledgerId,
+      ownerId,
+      delta: amount,
+      reason,
+      dodoPaymentId: dodoPaymentId ?? null,
+      status: "committed",
+      createdAt: ts,
+    });
+  } catch (err) {
+    // Unique payment id race — treat as already credited.
+    if (dodoPaymentId) {
+      const existing = await db
+        .select()
+        .from(creditLedger)
+        .where(eq(creditLedger.dodoPaymentId, dodoPaymentId))
+        .get();
+      if (existing) {
+        await reconcileWalletBalance(db, ownerId);
+        return existing.id;
+      }
+    }
+    throw err;
+  }
+
+  await reconcileWalletBalance(db, ownerId);
   return ledgerId;
 }
 
@@ -86,8 +140,8 @@ export async function holdCredits(
   amount: number,
   generationId: string,
 ) {
-  const wallet = await ensureWallet(db, ownerId);
-  if ((wallet?.creditBalance ?? 0) < amount) {
+  const balance = await reconcileWalletBalance(db, ownerId);
+  if (balance < amount) {
     throw new Error("INSUFFICIENT_CREDITS");
   }
   const ts = now();
@@ -101,20 +155,11 @@ export async function holdCredits(
     status: "pending",
     createdAt: ts,
   });
-  await db
-    .update(wallets)
-    .set({
-      creditBalance: (wallet?.creditBalance ?? 0) - amount,
-      updatedAt: ts,
-    })
-    .where(eq(wallets.ownerId, ownerId));
+  await reconcileWalletBalance(db, ownerId);
   return ledgerId;
 }
 
-export async function commitHold(
-  db: Db,
-  generationId: string,
-) {
+export async function commitHold(db: Db, generationId: string) {
   await db
     .update(creditLedger)
     .set({ status: "committed" })
@@ -130,9 +175,8 @@ export async function refundHold(
   db: Db,
   ownerId: string,
   generationId: string,
-  amount: number,
+  _amount: number,
 ) {
-  const ts = now();
   await db
     .update(creditLedger)
     .set({ status: "refunded" })
@@ -142,18 +186,7 @@ export async function refundHold(
         eq(creditLedger.status, "pending"),
       ),
     );
-  const wallet = await db
-    .select()
-    .from(wallets)
-    .where(eq(wallets.ownerId, ownerId))
-    .get();
-  await db
-    .update(wallets)
-    .set({
-      creditBalance: (wallet?.creditBalance ?? 0) + amount,
-      updatedAt: ts,
-    })
-    .where(eq(wallets.ownerId, ownerId));
+  await reconcileWalletBalance(db, ownerId);
 }
 
 export async function createGeneration(
@@ -215,11 +248,7 @@ export async function getGeneration(
   return db.select().from(generations).where(conditions).get();
 }
 
-export async function listGenerations(
-  db: Db,
-  ownerId: string,
-  limit = 50,
-) {
+export async function listGenerations(db: Db, ownerId: string, limit = 50) {
   return db
     .select()
     .from(generations)
@@ -264,5 +293,3 @@ export async function getWebhookEndpoint(db: Db, ownerId: string) {
     .where(eq(webhookEndpoints.ownerId, ownerId))
     .get();
 }
-
-export * from "./schema";

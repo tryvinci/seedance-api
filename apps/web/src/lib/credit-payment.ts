@@ -1,29 +1,61 @@
-import { CREDIT_PACKS } from "@seedance/models";
+import { CREDIT_PACKS, usdToCredits } from "@seedance/models";
 import { addCredits, type Db } from "@seedance/db";
 import { getDodoApiBase } from "@/lib/dodo";
 
 export type DodoPayment = {
   payment_id?: string;
+  paymentId?: string;
+  id?: string;
   status?: string | null;
+  total_amount?: number | null;
+  settlement_amount?: number | null;
   metadata?: Record<string, string> | null;
 };
 
-export function creditsFromMetadata(
-  metadata: Record<string, string> | null | undefined,
-): number | null {
-  if (!metadata) return null;
+export function paymentIdOf(payment: DodoPayment, fallback?: string): string {
+  return (
+    payment.payment_id ||
+    payment.paymentId ||
+    payment.id ||
+    fallback ||
+    ""
+  );
+}
+
+export function creditsFromPayment(payment: DodoPayment): number | null {
+  const metadata = payment.metadata ?? {};
   const creditsFromMeta = Number(metadata.credits);
   if (Number.isFinite(creditsFromMeta) && creditsFromMeta > 0) {
     return Math.round(creditsFromMeta);
   }
+
+  const amountUsdMeta = Number(metadata.amount_usd);
+  if (Number.isFinite(amountUsdMeta) && amountUsdMeta > 0) {
+    return usdToCredits(amountUsdMeta);
+  }
+
   const pack = CREDIT_PACKS.find((p) => p.id === metadata.pack_id);
-  return pack?.credits ?? null;
+  if (pack) return pack.credits;
+
+  // Dodo amounts are in the smallest currency unit (cents for USD).
+  const cents = Number(payment.total_amount ?? payment.settlement_amount);
+  if (Number.isFinite(cents) && cents > 0) {
+    return Math.round(cents);
+  }
+
+  return null;
 }
 
 export function isPaymentSucceeded(status: string | null | undefined): boolean {
   if (!status) return false;
   const s = status.toLowerCase();
-  return s === "succeeded" || s === "success" || s === "paid";
+  return (
+    s === "succeeded" ||
+    s === "success" ||
+    s === "paid" ||
+    s === "complete" ||
+    s === "completed"
+  );
 }
 
 export async function fetchDodoPayment(
@@ -38,7 +70,12 @@ export async function fetchDodoPayment(
     console.error("Dodo payment fetch failed:", res.status, await res.text());
     return null;
   }
-  return (await res.json()) as DodoPayment;
+  const data = (await res.json()) as DodoPayment;
+  // Ensure id is present for callers.
+  if (!data.payment_id && !data.id) {
+    data.payment_id = paymentId;
+  }
+  return data;
 }
 
 /** Credit wallet for a succeeded payment. Idempotent on payment id. */
@@ -48,17 +85,26 @@ export async function creditSucceededPayment(
   payment: DodoPayment,
   paymentId: string,
 ): Promise<{ credited: boolean; credits: number }> {
-  if (!isPaymentSucceeded(payment.status)) {
+  // Webhook events are already payment.succeeded; GET may omit status.
+  const statusOk =
+    !payment.status || isPaymentSucceeded(payment.status);
+  if (!statusOk) {
+    console.error("Payment not succeeded:", paymentId, payment.status);
     return { credited: false, credits: 0 };
   }
+
   const metadata = payment.metadata ?? {};
   if (metadata.clerk_user_id && metadata.clerk_user_id !== ownerId) {
     throw new Error("Payment belongs to a different user");
   }
-  const credits = creditsFromMetadata(metadata);
+
+  const credits = creditsFromPayment(payment);
   if (!credits) {
+    console.error("Payment missing credit amount:", paymentId, payment);
     throw new Error("Payment missing credit metadata");
   }
-  await addCredits(db, ownerId, credits, "purchase", paymentId);
+
+  const id = paymentIdOf(payment, paymentId);
+  await addCredits(db, ownerId, credits, "purchase", id);
   return { credited: true, credits };
 }

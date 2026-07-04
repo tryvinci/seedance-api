@@ -1,38 +1,36 @@
 "use client";
 
 import { useAuth } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { AddBalanceModal } from "@/components/add-balance-modal";
 import { formatUsd } from "@seedance/models";
-import { getApiBaseUrl } from "@/lib/api-base";
 
 export function NavBalance() {
-  const { userId, getToken, isSignedIn } = useAuth();
+  const { userId, isSignedIn } = useAuth();
   const [balanceUsd, setBalanceUsd] = useState<number | null>(null);
   const [open, setOpen] = useState(false);
+
+  const load = useCallback(async () => {
+    try {
+      const res = await fetch("/api/account/balance", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        setBalanceUsd(
+          typeof data.balance_usd === "number" ? data.balance_usd : 0,
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     if (!isSignedIn) {
       setBalanceUsd(null);
       return;
     }
-    async function load() {
-      const token = await getToken();
-      if (!token) return;
-      try {
-        const res = await fetch(`${getApiBaseUrl()}/v1/credits`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setBalanceUsd(data.balance_usd ?? 0);
-        }
-      } catch {
-        /* ignore */
-      }
-    }
     load();
-  }, [isSignedIn, userId, getToken]);
+  }, [isSignedIn, userId, load]);
 
   if (!isSignedIn) return null;
 
@@ -54,7 +52,13 @@ export function NavBalance() {
           +
         </span>
       </button>
-      <AddBalanceModal open={open} onClose={() => setOpen(false)} />
+      <AddBalanceModal
+        open={open}
+        onClose={() => {
+          setOpen(false);
+          load();
+        }}
+      />
     </>
   );
 }

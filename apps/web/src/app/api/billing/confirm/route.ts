@@ -1,13 +1,14 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { drizzle } from "drizzle-orm/d1";
 import { getWalletBalance } from "@seedance/db";
 import { creditsToUsd } from "@seedance/models";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import {
   creditSucceededPayment,
   fetchDodoPayment,
 } from "@/lib/credit-payment";
+import { getDb } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 /**
  * Reconcile a payment after return from Dodo checkout.
@@ -39,19 +40,15 @@ export async function POST(req: Request) {
   }
 
   try {
-    const { env } = await getCloudflareContext({ async: true });
-    const db = drizzle(env.DB);
-    const result = await creditSucceededPayment(
-      db,
-      userId,
-      payment,
-      paymentId,
-    );
+    const db = await getDb();
+    // If metadata lacks clerk_user_id, credit the authenticated user.
+    const result = await creditSucceededPayment(db, userId, payment, paymentId);
     const balance = await getWalletBalance(db, userId);
     return NextResponse.json({
       credited: result.credited,
       credits: result.credits,
       balance_usd: creditsToUsd(balance),
+      balance_credits: balance,
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Credit failed";

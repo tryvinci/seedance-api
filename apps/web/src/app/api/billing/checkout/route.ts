@@ -1,10 +1,11 @@
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { drizzle } from "drizzle-orm/d1";
 import { addCredits, getWalletBalance } from "@seedance/db";
 import { CREDIT_PACKS, creditsToUsd, usdToCredits } from "@seedance/models";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDodoApiBase } from "@/lib/dodo";
+import { getDb } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 const MIN_USD = 5;
 const MAX_USD = 10_000;
@@ -59,8 +60,7 @@ export async function POST(req: Request) {
 
   if (useDevCredit) {
     try {
-      const { env } = await getCloudflareContext({ async: true });
-      const db = drizzle(env.DB);
+      const db = await getDb();
       const paymentId = `dev_${crypto.randomUUID()}`;
       await addCredits(db, userId, credits, "purchase", paymentId);
       const balance = await getWalletBalance(db, userId);

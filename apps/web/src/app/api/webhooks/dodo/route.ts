@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
-import { drizzle } from "drizzle-orm/d1";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { verifyDodoWebhook } from "@/lib/dodo";
 import { isDevWebhookBypass } from "@/lib/webhook-dev";
 import {
   creditSucceededPayment,
+  paymentIdOf,
   type DodoPayment,
 } from "@/lib/credit-payment";
+import { getDb } from "@/lib/db";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   const payload = await req.text();
@@ -39,7 +41,7 @@ export async function POST(req: Request) {
 
   // payment.succeeded is the source of truth for one-time top-ups.
   if (event.type === "payment.succeeded") {
-    const paymentId = event.data?.payment_id ?? event.data?.id;
+    const paymentId = paymentIdOf(event.data ?? {}, event.data?.id);
     const metadata = event.data?.metadata ?? {};
     const userId = metadata.clerk_user_id;
     if (!userId || !paymentId) {
@@ -52,9 +54,7 @@ export async function POST(req: Request) {
     }
 
     try {
-      const { env } = await getCloudflareContext({ async: true });
-      const db = drizzle(env.DB);
-      // Webhook payload may omit status; treat payment.succeeded as paid.
+      const db = await getDb();
       await creditSucceededPayment(
         db,
         userId,

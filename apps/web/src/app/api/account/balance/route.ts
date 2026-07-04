@@ -2,7 +2,6 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { getWalletBalance } from "@seedance/db";
 import { creditsToUsd } from "@seedance/models";
-import { ensureDefaultApiKey } from "@/lib/ensure-default-api-key";
 import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -16,19 +15,14 @@ export async function GET() {
   try {
     const db = await getDb();
     const balance = await getWalletBalance(db, userId);
-    const key = await ensureDefaultApiKey(userId);
-
     return NextResponse.json({
       balance_usd: creditsToUsd(balance),
       balance_credits: balance,
-      default_api_key: key.secret,
-      default_api_key_name: key.name,
-      default_api_key_created: key.created,
     });
   } catch (err) {
-    console.error("Account bootstrap failed:", err);
+    console.error("Balance read failed:", err);
     return NextResponse.json(
-      { error: "Failed to provision account" },
+      { error: "Failed to load balance" },
       { status: 500 },
     );
   }
