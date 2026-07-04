@@ -5,6 +5,7 @@ import { Instrument_Serif } from "next/font/google";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { JsonLd } from "@/components/json-ld";
+import { getAppUrl, getDashboardUrl } from "@/lib/app-url";
 import "./globals.css";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
@@ -127,8 +128,15 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const appUrl = getAppUrl();
+  const dashboardUrl = getDashboardUrl();
+
   return (
-    <ClerkProvider>
+    <ClerkProvider
+      signInFallbackRedirectUrl={dashboardUrl}
+      signUpFallbackRedirectUrl={dashboardUrl}
+      afterSignOutUrl={appUrl}
+    >
       <html
         lang="en"
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}

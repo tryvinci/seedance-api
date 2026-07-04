@@ -22,8 +22,11 @@
     "CUSTOM_DOMAIN": "seedanceapi.us",
     "MINTLIFY_DOCS_HOST": "seedanceus.mintlify.site",
     "NEXT_PUBLIC_APP_URL": "https://seedanceapi.us",
+    "NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL": "https://seedanceapi.us/dashboard",
+    "NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL": "https://seedanceapi.us/dashboard",
     "DODO_PAYMENTS_ENV": "live"
   },
+
   "routes": [
     {
       "pattern": "seedanceapi.us",

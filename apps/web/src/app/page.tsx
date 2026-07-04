@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { listModels, listFamilies } from "@seedance/models";
 import { getDocsUrl } from "@/lib/docs-url";
+import { GetApiKeyButton } from "@/components/get-api-key-button";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
@@ -38,12 +38,7 @@ export default function HomePage() {
               Pay as you go, connect agents via MCP, and ship faster.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <Link
-                href="/dashboard"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-hero transition hover:bg-white/90"
-              >
-                Get API key
-              </Link>
+              <GetApiKeyButton className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-hero transition hover:bg-white/90" />
               <a
                 href={getDocsUrl()}
                 className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/20"
