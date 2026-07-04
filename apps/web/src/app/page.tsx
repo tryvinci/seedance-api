@@ -30,7 +30,7 @@ export default function HomePage() {
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/75">
               Production-ready REST API for cinematic video and image generation.
-              Prepaid credits, MCP access, and Mintlify documentation.
+              Prepaid credits, MCP access, and full API documentation.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <a
@@ -120,7 +120,7 @@ export default function HomePage() {
           <p className="mt-4 text-center text-sm text-ink-soft">
             Full guide in{" "}
             <a href={getDocsUrl("/quickstart")} className="text-accent hover:underline">
-              Mintlify docs
+              the docs
             </a>
           </p>
         </div>

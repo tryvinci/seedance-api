@@ -28,7 +28,7 @@ export default function AgentsPage() {
         Connect your AI agents to Seedance API via Model Context Protocol.
         Full guide in{" "}
         <a href={getDocsUrl("/agents")} className="text-accent hover:underline">
-          Mintlify docs
+          the docs
         </a>
         .
       </p>

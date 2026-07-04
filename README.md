@@ -8,7 +8,7 @@ State-of-the-art REST API for SeedDance video and Seedream image generation mode
 apps/
   api/     — Hono Worker at api.seedanceapi.us
   web/     — Next.js site at seedanceapi.us
-docs/      — Mintlify docs at seedanceapi.us/docs
+docs/      — Docs at seedanceapi.us/docs
 packages/
   models/     — Model catalog, pricing, OpenAPI spec
   providers/  — ModelArk + WaveSpeed clients with fallback
@@ -21,7 +21,7 @@ packages/
 pnpm install
 pnpm dev:api   # API on :8787
 pnpm dev:web   # Web on :3000
-pnpm dev:docs  # Mintlify docs on :3333
+pnpm dev:docs  # Docs preview on :3333
 ```
 
 See [DEPLOY.md](./DEPLOY.md) for production deployment.
