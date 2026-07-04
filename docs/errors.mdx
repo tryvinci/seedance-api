@@ -8,8 +8,8 @@ All errors return JSON with an `error` object:
 ```json
 {
   "error": {
-    "code": "insufficient_credits",
-    "message": "Not enough credits for this generation"
+    "code": "insufficient_balance",
+    "message": "Not enough balance for this generation"
   }
 }
 ```
@@ -20,21 +20,21 @@ All errors return JSON with an `error` object:
 | --- | --- |
 | `400` | Invalid request parameters |
 | `401` | Missing or invalid API key |
-| `402` | Insufficient credits |
+| `402` | Insufficient balance |
 | `404` | Generation not found |
 | `409` | Idempotency conflict |
-| `502` | Upstream generation failed |
+| `502` | Generation failed |
 
 ## Common fixes
 
 <AccordionGroup>
   <Accordion title="401 Unauthorized">
-    Verify you are using a user API key (`ak_...`), not a Clerk secret key (`sk_live_...`). Create a new key in the dashboard if needed.
+    Use an API key from your dashboard (`ak_...`). Create a new key if needed.
   </Accordion>
   <Accordion title="402 Payment Required">
-    Buy credits on the [pricing page](https://seedanceapi.us/pricing). Check your balance with `GET /v1/credits`.
+    Add balance on the [pricing page](https://seedanceapi.us/pricing). Check your balance with `GET /v1/credits`.
   </Accordion>
-  <Accordion title="502 Upstream Error">
-    Generation failed upstream. Retry the request, or try a different model or shorter duration.
+  <Accordion title="502 Generation failed">
+    Generation failed. Retry the request, or try a different model or shorter duration.
   </Accordion>
 </AccordionGroup>

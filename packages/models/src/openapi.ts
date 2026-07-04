@@ -56,7 +56,7 @@ export function buildOpenApiSpec() {
           responses: {
             "202": { description: "Generation accepted" },
             "401": { description: "Unauthorized" },
-            "402": { description: "Insufficient credits" },
+            "402": { description: "Insufficient balance" },
           },
         },
       },
@@ -76,7 +76,7 @@ export function buildOpenApiSpec() {
             "200": { description: "Image generated" },
             "202": { description: "Generation accepted (async)" },
             "401": { description: "Unauthorized" },
-            "402": { description: "Insufficient credits" },
+            "402": { description: "Insufficient balance" },
           },
         },
       },
@@ -100,10 +100,23 @@ export function buildOpenApiSpec() {
       },
       "/v1/credits": {
         get: {
-          summary: "Get credit balance",
+          summary: "Get account balance",
           security: [{ bearerAuth: [] }],
           responses: {
-            "200": { description: "Credit balance" },
+            "200": { description: "Prepaid balance in USD" },
+          },
+        },
+      },
+      "/v1/media/upload": {
+        post: {
+          summary: "Upload media for generation inputs",
+          description:
+            "Upload an image or video and receive a URL for image_url / video_url fields.",
+          security: [{ bearerAuth: [] }],
+          responses: {
+            "200": { description: "Uploaded media URL" },
+            "400": { description: "Invalid request" },
+            "413": { description: "File too large" },
           },
         },
       },
@@ -113,7 +126,7 @@ export function buildOpenApiSpec() {
         bearerAuth: {
           type: "http",
           scheme: "bearer",
-          description: "Clerk user API key (ak_...) created in the Seedance dashboard",
+          description: "API key (ak_...) from your SeedanceAPI dashboard",
         },
       },
       schemas: {
@@ -125,7 +138,8 @@ export function buildOpenApiSpec() {
             family: { type: "string" },
             kind: { type: "string", enum: ["video", "image"] },
             variant: { type: "string" },
-            credits: { type: "integer" },
+            price_usd: { type: "number" },
+            price_unit: { type: "string", enum: ["second", "generation"] },
             description: { type: "string" },
           },
         },
@@ -174,7 +188,7 @@ export function buildOpenApiSpec() {
             },
             model: { type: "string" },
             output_url: { type: "string", nullable: true },
-            credits_cost: { type: "integer" },
+            price_usd: { type: "number" },
             error: { type: "string", nullable: true },
           },
         },
@@ -189,7 +203,8 @@ export function modelToPublic(model: {
   family: string;
   kind: string;
   variant: string;
-  credits: number;
+  priceUsd: number;
+  priceUnit: "second" | "generation";
   description: string;
 }) {
   return {
@@ -198,7 +213,8 @@ export function modelToPublic(model: {
     family: model.family,
     kind: model.kind,
     variant: model.variant,
-    credits: model.credits,
+    price_usd: model.priceUsd,
+    price_unit: model.priceUnit,
     description: model.description,
   };
 }

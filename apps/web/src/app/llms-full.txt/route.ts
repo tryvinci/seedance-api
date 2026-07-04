@@ -3,7 +3,7 @@ import { listModels, modelToPublic, CREDIT_PACKS } from "@seedance/models";
 export async function GET() {
   const models = listModels();
 
-  const content = `# Seedance API — Full Reference
+  const content = `# SeedanceAPI — Full Reference
 > Complete model catalog and API reference for LLM agents.
 
 ## API
@@ -17,8 +17,8 @@ export async function GET() {
 Authorization: Bearer ak_YOUR_API_KEY
 \`\`\`
 
-## Credit packs
-${CREDIT_PACKS.map((p) => `- ${p.name}: ${p.credits} credits for $${p.priceUsd}`).join("\n")}
+## Prepaid balance packs
+${CREDIT_PACKS.map((p) => `- ${p.name}: $${p.priceUsd.toFixed(2)}`).join("\n")}
 
 ## All models (${models.length} total)
 
@@ -29,7 +29,7 @@ ${models
 - Display: ${pub.display_name}
 - Kind: ${pub.kind}
 - Variant: ${pub.variant}
-- Credits: ${pub.credits}
+- Price: $${pub.price_usd.toFixed(2)}/${pub.price_unit === "second" ? "sec" : "gen"}
 - Family: ${pub.family}
 - ${pub.description}`;
   })

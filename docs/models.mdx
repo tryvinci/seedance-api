@@ -1,32 +1,36 @@
 ---
 title: Models reference
-description: All SeedDance and Seedream model IDs and credit costs.
+description: All SeedDance and Seedream model IDs and USD list prices.
 ---
 
 Each model ID follows `{family}/{variant}`.
 
+- **Video** prices are **per second** of output.
+- **Image** prices are **per generation**.
+
 ## Video models
 
-| Model ID | Credits |
+| Model ID | Price |
 | --- | --- |
-| `seedance-2.5/text-to-video` | 120 |
-| `seedance-2.5/image-to-video` | 120 |
-| `seedance-2.0/text-to-video` | 100 |
-| `seedance-2.0/image-to-video` | 100 |
-| `seedance-2.0-fast/text-to-video` | 80 |
-| `seedance-2.0-mini/text-to-video` | 60 |
-| `seedance-1.5-pro/text-to-video` | 70 |
-| `seedance-1.0-pro/text-to-video` | 50 |
+| `seedance-2.5/text-to-video` | $0.16/sec |
+| `seedance-2.5/image-to-video` | $0.16/sec |
+| `seedance-2.0/text-to-video` | $0.16/sec |
+| `seedance-2.0/image-to-video` | $0.16/sec |
+| `seedance-2.0-fast/text-to-video` | $0.13/sec |
+| `seedance-2.0-mini/text-to-video` | $0.16/sec |
+| `seedance-1.5-pro/text-to-video` | $0.06/sec |
+| `seedance-1.0-pro/text-to-video` | $0.06/sec |
 
 ## Image models
 
-| Model ID | Credits |
+| Model ID | Price |
 | --- | --- |
-| `seedream-5.0/text-to-image` | 15 |
-| `seedream-5.0/image-to-image` | 15 |
-| `seedream-4.5/text-to-image` | 10 |
-| `seedream-4.0/text-to-image` | 8 |
+| `seedream-5.0/text-to-image` | $0.04/gen |
+| `seedream-5.0-lite/text-to-image` | $0.04/gen |
+| `seedream-4.5/text-to-image` | $0.04/gen |
+| `seedream-4.0/text-to-image` | $0.03/gen |
 
 <Note>
-  Call `GET /v1/models` for the live catalog including availability.
+  Call `GET /v1/models` for the live catalog (`price_usd` + `price_unit`).
+  A 5-second video at `$0.16/sec` costs `$0.80`.
 </Note>

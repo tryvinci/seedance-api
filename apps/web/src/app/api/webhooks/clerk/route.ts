@@ -5,6 +5,7 @@ import { drizzle } from "drizzle-orm/d1";
 import { ensureWallet } from "@seedance/db";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { isDevWebhookBypass } from "@/lib/webhook-dev";
+import { ensureDefaultApiKey } from "@/lib/ensure-default-api-key";
 
 export async function POST(req: Request) {
   const payload = await req.text();
@@ -52,6 +53,11 @@ export async function POST(req: Request) {
       await ensureWallet(db, userId);
     } catch (err) {
       console.error("Failed to provision wallet:", err);
+    }
+    try {
+      await ensureDefaultApiKey(userId);
+    } catch (err) {
+      console.error("Failed to provision default API key:", err);
     }
   }
 

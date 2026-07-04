@@ -1,10 +1,16 @@
 "use client";
 
 import { APIKeys, useAuth, useUser } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { AddBalanceModal } from "@/components/add-balance-modal";
 import { BuyCreditsButton } from "@/components/buy-credits-button";
-import { CREDIT_PACKS } from "@seedance/models";
+import { CopyButton } from "@/components/copy-button";
+import { formatUsd, formatPrice, getModel, chargeUsd } from "@seedance/models";
 import { getApiBaseUrl } from "@/lib/api-base";
+import { getDocsUrl } from "@/lib/docs-url";
+
+type SnippetLang = "curl" | "javascript" | "python";
 
 interface Generation {
   id: string;
@@ -12,17 +18,82 @@ interface Generation {
   model: string;
   kind: string;
   output_url: string | null;
-  credits_cost: number;
+  price_usd: number;
   created_at: string;
 }
 
 export function DashboardClient() {
   const { userId, getToken } = useAuth();
   const { user } = useUser();
-  const [credits, setCredits] = useState<number | null>(null);
+  const [balanceUsd, setBalanceUsd] = useState<number | null>(null);
   const [generations, setGenerations] = useState<Generation[]>([]);
-  const [webhookUrl, setWebhookUrl] = useState("");
   const [loading, setLoading] = useState(true);
+  const [balanceOpen, setBalanceOpen] = useState(false);
+  const [webhookOpen, setWebhookOpen] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookStatus, setWebhookStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+
+  const [filterModel, setFilterModel] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterKind, setFilterKind] = useState("all");
+  const [defaultKey, setDefaultKey] = useState("");
+  const [defaultKeyName, setDefaultKeyName] = useState<string | null>(null);
+  const [keyVisible, setKeyVisible] = useState(false);
+  const [keyLoading, setKeyLoading] = useState(true);
+  const [creatingKey, setCreatingKey] = useState(false);
+  const [keysRefresh, setKeysRefresh] = useState(0);
+  const [snippetLang, setSnippetLang] = useState<SnippetLang>("curl");
+
+  const apiBase = getApiBaseUrl();
+  const email =
+    user?.primaryEmailAddress?.emailAddress ??
+    user?.emailAddresses[0]?.emailAddress ??
+    "";
+  const storageKey = userId ? `seedance_default_api_key:${userId}` : null;
+  const authHeader = defaultKey
+    ? `Authorization: Bearer ${defaultKey}`
+    : "Authorization: Bearer ak_…";
+  const keyPlaceholder = defaultKey || "ak_your_key";
+
+  const videoModel = getModel("seedance-2.5/text-to-video");
+  const imageModel = getModel("seedream-5.0/text-to-image");
+  const videoCall = videoModel
+    ? chargeUsd(videoModel, { duration: 5 })
+    : 0.8;
+  const imageCall = imageModel?.priceUsd ?? 0.04;
+  const bal = balanceUsd ?? 0;
+  const videoGens = videoCall > 0 ? Math.floor(bal / videoCall) : 0;
+  const imageGens = imageCall > 0 ? Math.floor(bal / imageCall) : 0;
+
+  const snippets: Record<SnippetLang, string> = {
+    curl: `curl ${apiBase}/v1/models \\
+  -H "Authorization: Bearer ${keyPlaceholder}"`,
+    javascript: `const res = await fetch("${apiBase}/v1/models", {
+  headers: { Authorization: "Bearer ${keyPlaceholder}" },
+});
+const { data } = await res.json();`,
+    python: `import requests
+
+res = requests.get(
+    "${apiBase}/v1/models",
+    headers={"Authorization": f"Bearer ${keyPlaceholder}"},
+)
+print(res.json())`,
+  };
+  const activeSnippet = snippets[snippetLang];
+
+  function saveDefaultKey(value: string) {
+    setDefaultKey(value);
+    if (!storageKey) return;
+    try {
+      if (value.trim()) sessionStorage.setItem(storageKey, value.trim());
+      else sessionStorage.removeItem(storageKey);
+    } catch {
+      /* ignore */
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -31,16 +102,74 @@ export function DashboardClient() {
         setLoading(false);
         return;
       }
-      const apiBase = getApiBaseUrl();
       const headers = { Authorization: `Bearer ${token}` };
+
+      // Dodo appends payment_id on return; reconcile if webhook never arrived.
+      const params = new URLSearchParams(window.location.search);
+      const paymentId = params.get("payment_id");
+      const paymentStatus = params.get("status");
+      if (
+        paymentId &&
+        (!paymentStatus ||
+          paymentStatus === "succeeded" ||
+          paymentStatus === "success")
+      ) {
+        try {
+          const confirmRes = await fetch("/api/billing/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paymentId }),
+          });
+          if (confirmRes.ok) {
+            const confirmed = await confirmRes.json();
+            if (typeof confirmed.balance_usd === "number") {
+              setBalanceUsd(confirmed.balance_usd);
+            }
+          }
+        } catch {
+          /* webhook may still land; balance loads below */
+        }
+        params.delete("payment_id");
+        params.delete("status");
+        params.delete("payment");
+        params.delete("email");
+        const clean = params.toString();
+        window.history.replaceState(
+          {},
+          "",
+          clean
+            ? `${window.location.pathname}?${clean}`
+            : window.location.pathname,
+        );
+      }
+
       try {
-        const [creditsRes, gensRes] = await Promise.all([
-          fetch(`${apiBase}/v1/credits`, { headers }).catch(() => null),
+        const [bootRes, gensRes] = await Promise.all([
+          fetch("/api/account/bootstrap").catch(() => null),
           fetch(`${apiBase}/v1/generations`, { headers }).catch(() => null),
         ]);
-        if (creditsRes?.ok) {
-          const data = await creditsRes.json();
-          setCredits(data.credits);
+        if (bootRes?.ok) {
+          const data = await bootRes.json();
+          setBalanceUsd(data.balance_usd ?? 0);
+          setDefaultKeyName(
+            typeof data.default_api_key_name === "string"
+              ? data.default_api_key_name
+              : null,
+          );
+          const secret =
+            typeof data.default_api_key === "string"
+              ? data.default_api_key
+              : "";
+          if (secret) {
+            saveDefaultKey(secret);
+          } else if (storageKey) {
+            try {
+              const saved = sessionStorage.getItem(storageKey);
+              if (saved) setDefaultKey(saved);
+            } catch {
+              /* ignore */
+            }
+          }
         }
         if (gensRes?.ok) {
           const data = await gensRes.json();
@@ -48,150 +177,525 @@ export function DashboardClient() {
         }
       } finally {
         setLoading(false);
+        setKeyLoading(false);
       }
     }
     load();
-  }, [userId, getToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per user session
+  }, [userId, getToken, apiBase, storageKey]);
+
+  const models = useMemo(
+    () => [...new Set(generations.map((g) => g.model))].sort(),
+    [generations],
+  );
+
+  const filtered = useMemo(() => {
+    return generations.filter((g) => {
+      if (filterModel !== "all" && g.model !== filterModel) return false;
+      if (filterStatus !== "all" && g.status !== filterStatus) return false;
+      if (filterKind !== "all" && g.kind !== filterKind) return false;
+      return true;
+    });
+  }, [generations, filterModel, filterStatus, filterKind]);
+
+  async function saveWebhook() {
+    setWebhookStatus("saving");
+    try {
+      const res = await fetch("/api/webhooks/configure", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: webhookUrl }),
+      });
+      setWebhookStatus(res.ok ? "saved" : "error");
+      if (res.ok) {
+        window.setTimeout(() => setWebhookStatus("idle"), 2000);
+      }
+    } catch {
+      setWebhookStatus("error");
+    }
+  }
+
+  async function createApiKey() {
+    setCreatingKey(true);
+    try {
+      const res = await fetch("/api/account/api-keys", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error ?? "Failed to create API key");
+        return;
+      }
+      if (typeof data.secret === "string") {
+        saveDefaultKey(data.secret);
+        setKeyVisible(true);
+      }
+      if (typeof data.name === "string") setDefaultKeyName(data.name);
+      setKeysRefresh((n) => n + 1);
+    } catch {
+      alert("Failed to create API key");
+    } finally {
+      setCreatingKey(false);
+    }
+  }
 
   return (
-    <div className="paper-grain mx-auto max-w-6xl px-6 py-16">
-      <h1 className="font-display text-3xl text-ink">Dashboard</h1>
-      <p className="mt-2 text-ink-soft">
-        Welcome, {user?.firstName ?? user?.emailAddresses[0]?.emailAddress}
-      </p>
+    <div className="paper-grain min-h-[70vh]">
+      <div className="mx-auto max-w-5xl px-6 py-12">
+        <header className="flex flex-wrap items-end justify-between gap-4">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+              Account
+            </p>
+            <h1 className="mt-1 font-display text-3xl tracking-tight text-ink">
+              Dashboard
+            </h1>
+            {email && <p className="mt-1 text-sm text-ink-soft">{email}</p>}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href={getDocsUrl("/quickstart")}
+              className="inline-flex items-center rounded-full border border-paper-edge bg-white px-4 py-2 text-sm font-medium text-ink-2 transition hover:border-ink-soft hover:bg-paper-2 hover:text-ink"
+            >
+              Docs
+            </a>
+            <Link
+              href="/models"
+              className="inline-flex items-center rounded-full border border-paper-edge bg-white px-4 py-2 text-sm font-medium text-ink-2 transition hover:border-ink-soft hover:bg-paper-2 hover:text-ink"
+            >
+              Models
+            </Link>
+          </div>
+        </header>
 
-      <div className="mt-10 grid gap-6 md:grid-cols-3">
-        <div className="rounded-2xl border border-paper-edge bg-white p-6">
-          <p className="font-mono text-[11px] uppercase tracking-wider text-ink-soft">Credit balance</p>
-          <p className="mt-2 font-display text-4xl text-accent">
-            {loading ? "..." : (credits ?? 0).toLocaleString()}
-          </p>
+        {/* Top: Quickstart | Balance — equal height */}
+        <div className="mt-10 grid items-stretch gap-6 lg:grid-cols-2">
+          <section className="flex flex-col rounded-2xl border border-paper-edge bg-white p-6">
+            <h2 className="font-display text-xl text-ink">Quickstart</h2>
+            <p className="mt-1 text-sm text-ink-soft">
+              {keyLoading
+                ? "Provisioning your default API key…"
+                : defaultKey
+                  ? "Copy your key and start calling the API."
+                  : "Create a key in one click — no name required."}
+            </p>
+
+            <div className="mt-5 flex flex-1 flex-col gap-3">
+              <div>
+                <p className="mb-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-soft">
+                  API base
+                </p>
+                <div className="flex items-center gap-2 rounded-xl border border-paper-edge bg-paper/40 px-3 py-2.5">
+                  <code className="min-w-0 flex-1 truncate font-mono text-sm text-ink">
+                    {apiBase}
+                  </code>
+                  <CopyButton value={apiBase} label="Copy" />
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-soft">
+                  API key
+                  {defaultKeyName ? ` · ${defaultKeyName}` : ""}
+                </p>
+                <div className="flex items-center gap-2 rounded-xl border border-paper-edge bg-paper/40 px-3 py-2.5">
+                  <input
+                    type={keyVisible ? "text" : "password"}
+                    value={defaultKey}
+                    onChange={(e) => saveDefaultKey(e.target.value)}
+                    placeholder={keyLoading ? "Loading…" : "ak_…"}
+                    autoComplete="off"
+                    spellCheck={false}
+                    disabled={keyLoading}
+                    className="min-w-0 flex-1 bg-transparent font-mono text-sm text-ink outline-none placeholder:text-ink-soft/50 disabled:opacity-60"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setKeyVisible((v) => !v)}
+                    className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-ink-soft transition hover:bg-white hover:text-ink"
+                  >
+                    {keyVisible ? "Hide" : "Show"}
+                  </button>
+                  <CopyButton
+                    value={defaultKey}
+                    label="Copy"
+                    className={!defaultKey ? "pointer-events-none opacity-40" : ""}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <p className="mb-1.5 font-mono text-[11px] uppercase tracking-wider text-ink-soft">
+                  Auth header
+                </p>
+                <div className="flex items-center gap-2 rounded-xl border border-paper-edge bg-paper/40 px-3 py-2.5">
+                  <code className="min-w-0 flex-1 truncate font-mono text-xs text-ink-2">
+                    {authHeader}
+                  </code>
+                  <CopyButton
+                    value={defaultKey ? authHeader : ""}
+                    label="Copy"
+                    className={!defaultKey ? "pointer-events-none opacity-40" : ""}
+                  />
+                </div>
+              </div>
+
+              <div className="mt-auto flex flex-col gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={createApiKey}
+                  disabled={creatingKey || keyLoading}
+                  className="inline-flex w-full items-center justify-center rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-2 disabled:opacity-50"
+                >
+                  {creatingKey ? "Creating…" : "Create API key"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    document
+                      .getElementById("api-keys")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                  }
+                  className="inline-flex w-full items-center justify-center rounded-full border border-paper-edge bg-white px-4 py-2.5 text-sm font-medium text-ink-2 transition hover:border-ink-soft hover:bg-paper-2 hover:text-ink"
+                >
+                  Manage keys
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section className="flex flex-col rounded-2xl border border-paper-edge bg-white p-6">
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
+                Balance
+              </p>
+              <p className="mt-3 font-display text-5xl tracking-tight text-ink sm:text-6xl">
+                {loading ? "—" : formatUsd(bal)}
+              </p>
+              <p className="mt-2 text-sm text-ink-soft">Prepaid USD</p>
+              {!loading && (
+                <p className="mt-4 max-w-[16rem] text-sm leading-relaxed text-ink-soft">
+                  {bal <= 0 ? (
+                    <>Add balance to run generations.</>
+                  ) : (
+                    <>
+                      About{" "}
+                      <span className="font-medium text-ink">
+                        {videoGens.toLocaleString()}
+                      </span>{" "}
+                      × 5s videos (
+                      {videoModel
+                        ? formatPrice(videoModel.priceUsd, "second")
+                        : "$0.16/sec"}
+                      ), or{" "}
+                      <span className="font-medium text-ink">
+                        {imageGens.toLocaleString()}
+                      </span>{" "}
+                      images (
+                      {imageModel
+                        ? formatPrice(imageModel.priceUsd, "generation")
+                        : "$0.04/gen"}
+                      ).
+                    </>
+                  )}
+                </p>
+              )}
+            </div>
+
+            <div className="mt-6 flex flex-col gap-2">
+              <BuyCreditsButton
+                packId="builder"
+                label="Add $20"
+                variant="primary"
+              />
+              <button
+                type="button"
+                onClick={() => setBalanceOpen(true)}
+                className="inline-flex w-full items-center justify-center rounded-full border border-paper-edge bg-white px-4 py-2.5 text-sm font-medium text-ink-2 transition hover:border-ink-soft hover:bg-paper-2 hover:text-ink"
+              >
+                More amounts
+              </button>
+            </div>
+          </section>
         </div>
-        <div className="rounded-2xl border border-paper-edge bg-white p-6 md:col-span-2">
-          <p className="text-sm font-medium text-ink">Using your API key</p>
-          <p className="mt-2 text-sm text-ink-soft">
-            Create a key below, then pass it as a Bearer token on every request:
-          </p>
-          <pre className="mt-3 overflow-x-auto rounded-lg bg-hero p-3 text-xs font-mono text-white">
-            {`Authorization: Bearer ak_...`}
+
+        {/* Example request — full width, multi-language */}
+        <section className="mt-6 rounded-2xl border border-paper-edge bg-hero p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="inline-flex rounded-full bg-white/10 p-1">
+              {(
+                [
+                  ["curl", "cURL"],
+                  ["javascript", "JavaScript"],
+                  ["python", "Python"],
+                ] as const
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setSnippetLang(id)}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                    snippetLang === id
+                      ? "bg-white text-hero"
+                      : "text-white/60 hover:text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <CopyButton
+              value={activeSnippet}
+              label="Copy"
+              className="border-white/20 bg-white/10 text-white hover:border-white/40 hover:bg-white/15 hover:text-white"
+            />
+          </div>
+          <pre className="mt-4 overflow-x-auto font-mono text-[12px] leading-relaxed text-white/90">
+            {activeSnippet}
           </pre>
-          <p className="mt-2 text-xs text-ink-soft">
-            API base: {getApiBaseUrl()}
-          </p>
-        </div>
+        </section>
+
+        {/* API keys manager */}
+        <section
+          id="api-keys"
+          className="mt-6 scroll-mt-24 rounded-2xl border border-paper-edge bg-white p-6"
+        >
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <h2 className="font-display text-xl text-ink">API keys</h2>
+              <p className="mt-1 text-sm text-ink-soft">
+                One-click create uses an auto name like{" "}
+                <span className="font-mono text-xs">API key · Jul 3, 2026…</span>
+                . Revoke unused keys here.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={createApiKey}
+              disabled={creatingKey}
+              className="inline-flex items-center justify-center rounded-full bg-ink px-4 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-2 disabled:opacity-50"
+            >
+              {creatingKey ? "Creating…" : "Create API key"}
+            </button>
+          </div>
+          <div
+            key={keysRefresh}
+            className="cl-apiKeys mt-5 overflow-hidden rounded-xl border border-paper-edge bg-white p-3"
+          >
+            <APIKeys
+              showDescription={false}
+              appearance={{
+                baseTheme: undefined,
+                variables: {
+                  colorBackground: "#ffffff",
+                  colorInputBackground: "#ffffff",
+                  colorInputText: "#181b20",
+                  colorText: "#181b20",
+                  colorTextSecondary: "#5c6370",
+                  colorTextOnPrimaryBackground: "#ffffff",
+                  colorPrimary: "#2563eb",
+                  colorNeutral: "#181b20",
+                  colorDanger: "#dc2626",
+                  borderRadius: "0.75rem",
+                },
+                elements: {
+                  rootBox: "w-full",
+                  cardBox: "shadow-none border-0 bg-white",
+                  card: "bg-white shadow-none",
+                  formFieldInput:
+                    "bg-white text-[#181b20] border border-[#e7e5e4]",
+                  formFieldLabel: "text-[#5c6370]",
+                  selectButton:
+                    "bg-white text-[#181b20] border border-[#e7e5e4]",
+                  selectOptionsContainer: "bg-white text-[#181b20]",
+                  selectOption: "text-[#181b20] bg-white",
+                  menuList: "bg-white text-[#181b20]",
+                  menuItem: "text-[#181b20]",
+                  menuButton: "text-[#181b20]",
+                  button: "text-[#181b20]",
+                  table: "text-[#181b20]",
+                  tableHead: "text-[#5c6370]",
+                },
+              }}
+            />
+          </div>
+        </section>
+
+        {/* Generations */}
+        <section className="mt-6 rounded-2xl border border-paper-edge bg-white p-6">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="font-display text-xl text-ink">Generations</h2>
+              <p className="mt-1 text-sm text-ink-soft">
+                {filtered.length}
+                {filtered.length !== generations.length
+                  ? ` of ${generations.length}`
+                  : ""}{" "}
+                recent
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <select
+                value={filterKind}
+                onChange={(e) => setFilterKind(e.target.value)}
+                className="rounded-lg border border-paper-edge bg-paper/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+              >
+                <option value="all">All types</option>
+                <option value="video">Video</option>
+                <option value="image">Image</option>
+              </select>
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="rounded-lg border border-paper-edge bg-paper/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+              >
+                <option value="all">All statuses</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+              </select>
+              <select
+                value={filterModel}
+                onChange={(e) => setFilterModel(e.target.value)}
+                className="max-w-[200px] rounded-lg border border-paper-edge bg-paper/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+              >
+                <option value="all">All models</option>
+                {models.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {loading ? (
+            <p className="mt-6 text-sm text-ink-soft">Loading…</p>
+          ) : generations.length === 0 ? (
+            <p className="mt-6 text-sm text-ink-soft">
+              No generations yet. Create an API key, add balance, then call the
+              API.
+            </p>
+          ) : filtered.length === 0 ? (
+            <p className="mt-6 text-sm text-ink-soft">
+              No generations match these filters.
+            </p>
+          ) : (
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full min-w-[520px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-paper-edge text-ink-soft">
+                    <th className="pb-3 pr-4 font-mono text-[11px] font-medium uppercase tracking-wider">
+                      ID
+                    </th>
+                    <th className="pb-3 pr-4 font-mono text-[11px] font-medium uppercase tracking-wider">
+                      Model
+                    </th>
+                    <th className="pb-3 pr-4 font-mono text-[11px] font-medium uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th className="pb-3 pr-4 font-mono text-[11px] font-medium uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th className="pb-3 font-mono text-[11px] font-medium uppercase tracking-wider">
+                      Price
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((g) => (
+                    <tr
+                      key={g.id}
+                      className="border-b border-paper-edge/70 last:border-0"
+                    >
+                      <td className="py-3 pr-4 font-mono text-xs text-ink-2">
+                        {g.id.slice(0, 8)}…
+                      </td>
+                      <td className="py-3 pr-4 text-ink">{g.model}</td>
+                      <td className="py-3 pr-4 capitalize text-ink-soft">
+                        {g.kind}
+                      </td>
+                      <td className="py-3 pr-4">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            g.status === "completed"
+                              ? "bg-accent/10 text-accent"
+                              : g.status === "failed"
+                                ? "bg-red-50 text-red-600"
+                                : "bg-paper-2 text-ink-soft"
+                          }`}
+                        >
+                          {g.status}
+                        </span>
+                      </td>
+                      <td className="py-3 text-ink">
+                        {formatUsd(g.price_usd ?? 0)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+
+        {/* Optional webhook */}
+        <section className="mt-6 rounded-2xl border border-paper-edge bg-white">
+          <button
+            type="button"
+            onClick={() => setWebhookOpen((v) => !v)}
+            className="flex w-full items-center justify-between px-6 py-4 text-left"
+          >
+            <div>
+              <h2 className="font-display text-lg text-ink">
+                Webhook{" "}
+                <span className="font-sans text-sm font-normal text-ink-soft">
+                  (optional)
+                </span>
+              </h2>
+              <p className="mt-0.5 text-sm text-ink-soft">
+                Notified when a generation completes or fails — useful for async
+                video jobs instead of polling.
+              </p>
+            </div>
+            <span className="ml-4 text-ink-soft">{webhookOpen ? "−" : "+"}</span>
+          </button>
+          {webhookOpen && (
+            <div className="border-t border-paper-edge px-6 py-4">
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <input
+                  type="url"
+                  value={webhookUrl}
+                  onChange={(e) => {
+                    setWebhookUrl(e.target.value);
+                    setWebhookStatus("idle");
+                  }}
+                  placeholder="https://your-app.com/webhooks/seedance"
+                  className="min-w-0 flex-1 rounded-xl border border-paper-edge bg-paper/40 px-4 py-2.5 text-sm text-ink outline-none transition placeholder:text-ink-soft/60 focus:border-accent focus:bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={saveWebhook}
+                  disabled={webhookStatus === "saving" || !webhookUrl.trim()}
+                  className="inline-flex shrink-0 items-center justify-center rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {webhookStatus === "saving"
+                    ? "Saving…"
+                    : webhookStatus === "saved"
+                      ? "Saved"
+                      : webhookStatus === "error"
+                        ? "Retry"
+                        : "Save"}
+                </button>
+              </div>
+            </div>
+          )}
+        </section>
       </div>
 
-      <section className="mt-12">
-        <h2 className="font-display text-xl text-ink">API keys</h2>
-        <p className="mt-2 text-sm text-ink-soft">
-          Create, copy, and revoke keys tied to your account. Keys are shown once
-          at creation — store them securely.
-        </p>
-        <div className="mt-6 overflow-hidden rounded-2xl border border-paper-edge bg-white p-4">
-          <APIKeys
-            appearance={{
-              variables: {
-                colorBackground: "#fafaf9",
-                colorInputBackground: "#f5f5f4",
-                colorText: "#181b20",
-                colorTextSecondary: "#5c6370",
-                colorPrimary: "#2563eb",
-                borderRadius: "0.75rem",
-              },
-            }}
-          />
-        </div>
-      </section>
-
-      <section className="mt-12">
-        <h2 className="font-display text-xl text-ink">Buy credits</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {CREDIT_PACKS.map((pack) => (
-            <div
-              key={pack.id}
-              className="rounded-xl border border-paper-edge bg-white p-4"
-            >
-              <p className="font-medium text-ink">{pack.name}</p>
-              <p className="text-sm text-ink-soft">
-                {pack.credits.toLocaleString()} credits — ${pack.priceUsd}
-              </p>
-              <BuyCreditsButton packId={pack.id} className="mt-3" />
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="mt-12">
-        <h2 className="font-display text-xl text-ink">Webhook endpoint</h2>
-        <p className="mt-2 text-sm text-ink-soft">
-          Receive generation completion events at your URL.
-        </p>
-        <div className="mt-4 flex gap-3">
-          <input
-            type="url"
-            value={webhookUrl}
-            onChange={(e) => setWebhookUrl(e.target.value)}
-            placeholder="https://your-app.com/webhooks/seedance"
-            className="flex-1 rounded-lg border border-paper-edge bg-white px-4 py-2 text-sm text-ink outline-none focus:border-accent"
-          />
-          <button
-            onClick={async () => {
-              await fetch("/api/webhooks/configure", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ url: webhookUrl }),
-              });
-            }}
-            className="rounded-full bg-ink px-4 py-2 text-sm text-paper transition hover:bg-ink-2"
-          >
-            Save
-          </button>
-        </div>
-      </section>
-
-      <section className="mt-12">
-        <h2 className="font-display text-xl text-ink">Recent generations</h2>
-        {generations.length === 0 ? (
-          <p className="mt-4 text-sm text-ink-soft">
-            No generations yet. Create an API key above and make your first call.
-          </p>
-        ) : (
-          <div className="mt-4 overflow-hidden rounded-xl border border-paper-edge bg-white">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-paper-edge bg-paper-2/50">
-                <tr>
-                  <th className="px-4 py-3 text-ink-soft">ID</th>
-                  <th className="px-4 py-3 text-ink-soft">Model</th>
-                  <th className="px-4 py-3 text-ink-soft">Status</th>
-                  <th className="px-4 py-3 text-ink-soft">Credits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {generations.map((g) => (
-                  <tr key={g.id} className="border-b border-paper-edge/80">
-                    <td className="px-4 py-3 font-mono text-xs text-ink-2">{g.id.slice(0, 8)}...</td>
-                    <td className="px-4 py-3 text-ink">{g.model}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`rounded-full px-2 py-0.5 text-xs ${
-                          g.status === "completed"
-                            ? "bg-accent/10 text-accent"
-                            : g.status === "failed"
-                              ? "bg-red-100 text-red-600"
-                              : "bg-paper-2 text-ink-soft"
-                        }`}
-                      >
-                        {g.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-ink">{g.credits_cost}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </section>
+      <AddBalanceModal
+        open={balanceOpen}
+        onClose={() => setBalanceOpen(false)}
+      />
     </div>
   );
 }

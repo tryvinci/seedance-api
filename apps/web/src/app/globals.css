@@ -66,3 +66,46 @@ body {
 .prose-site pre code {
   @apply bg-transparent p-0 text-inherit;
 }
+
+/* Clerk APIKeys — readable inputs and expiration dropdown */
+.cl-apiKeys,
+.cl-apiKeys * {
+  color: #181b20;
+}
+
+.cl-apiKeys input,
+.cl-apiKeys select,
+.cl-apiKeys textarea,
+.cl-formFieldInput,
+.cl-selectButton,
+.cl-menuButton,
+.cl-button {
+  color: #181b20 !important;
+}
+
+.cl-menuList,
+.cl-selectOptionsContainer,
+.cl-menuListContainer,
+[class*="cl-menuList"],
+[class*="cl-selectOptions"],
+[role="listbox"],
+[data-radix-popper-content-wrapper] [role="option"],
+[data-radix-popper-content-wrapper] [role="menuitem"],
+[data-radix-popper-content-wrapper] [role="menuitemradio"] {
+  color: #181b20 !important;
+  background-color: #ffffff !important;
+}
+
+[data-radix-popper-content-wrapper] [role="option"][data-highlighted],
+[data-radix-popper-content-wrapper] [role="menuitem"][data-highlighted],
+[data-radix-popper-content-wrapper] [role="menuitemradio"][data-highlighted] {
+  color: #181b20 !important;
+  background-color: #f5f5f4 !important;
+}
+
+.cl-formFieldErrorText,
+.cl-formFieldInfoText,
+.cl-formFieldSuccessText,
+.cl-formFieldHintText {
+  color: #5c6370 !important;
+}

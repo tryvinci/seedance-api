@@ -1,7 +1,7 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Seedance API",
+  "name": "SeedanceAPI",
   "description": "REST API for SeedDance video and Seedream image generation.",
   "colors": {
     "primary": "#2563eb",
@@ -72,7 +72,7 @@
           },
           {
             "group": "Guides",
-            "pages": ["videos", "images", "models", "errors", "agents"]
+            "pages": ["videos", "images", "media", "models", "errors", "agents"]
           }
         ]
       },
@@ -90,6 +90,7 @@
               "GET /health",
               "GET /v1/models",
               "GET /v1/credits",
+              "POST /v1/media/upload",
               "POST /v1/videos",
               "POST /v1/images",
               "GET /v1/generations/{id}"
@@ -113,5 +114,17 @@
         "method": "bearer"
       }
     }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "cursor",
+      "mcp"
+    ],
+    "display": "header"
   }
 }

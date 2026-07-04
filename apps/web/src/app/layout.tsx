@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Instrument_Serif } from "next/font/google";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
+import { JsonLd } from "@/components/json-ld";
 import "./globals.css";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
@@ -15,29 +16,110 @@ const instrumentSerif = Instrument_Serif({
   variable: "--font-instrument-serif",
 });
 
+const siteUrl = "https://seedanceapi.us";
+const title = "SeedanceAPI — SeedDance & Seedream Models";
+const description =
+  "REST API for SeedDance 2.5 video and Seedream 5.0 image generation. Pay as you go, MCP support, and agent-ready docs.";
+
 export const metadata: Metadata = {
-  metadataBase: new URL("https://seedanceapi.us"),
+  metadataBase: new URL(siteUrl),
   title: {
-    default: "Seedance API — SeedDance & Seedream Models",
-    template: "%s | Seedance API",
+    default: title,
+    template: "%s | SeedanceAPI",
   },
-  description:
-    "State-of-the-art API for SeedDance 2.5 video and Seedream image generation. Prepaid credits, MCP support, and agent-ready documentation.",
+  description,
+  applicationName: "SeedanceAPI",
+  keywords: [
+    "SeedDance",
+    "Seedream",
+    "video generation API",
+    "image generation API",
+    "AI video API",
+    "text to video",
+    "text to image",
+    "MCP",
+    "SeedanceAPI",
+  ],
+  authors: [{ name: "SeedanceAPI", url: siteUrl }],
+  creator: "SeedanceAPI",
+  publisher: "SeedanceAPI",
+  category: "technology",
+  alternates: {
+    canonical: siteUrl,
+    types: {
+      "text/plain": [
+        { url: "/llms.txt", title: "llms.txt" },
+        { url: "/llms-full.txt", title: "llms-full.txt" },
+      ],
+    },
+  },
+  icons: {
+    icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/logo.svg", type: "image/svg+xml" }],
+  },
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "https://seedanceapi.us",
-    siteName: "Seedance API",
-    title: "Seedance API — SeedDance & Seedream Models",
-    description:
-      "REST API for SeedDance video and Seedream image generation models.",
+    url: siteUrl,
+    siteName: "SeedanceAPI",
+    title,
+    description,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Seedance API",
-    description: "REST API for SeedDance video and Seedream image generation.",
+    title: "SeedanceAPI",
+    description:
+      "REST API for SeedDance video and Seedream image generation.",
   },
-  robots: { index: true, follow: true },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${siteUrl}/#organization`,
+      name: "SeedanceAPI",
+      url: siteUrl,
+      logo: `${siteUrl}/logo.svg`,
+      description,
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${siteUrl}/#website`,
+      url: siteUrl,
+      name: "SeedanceAPI",
+      description,
+      publisher: { "@id": `${siteUrl}/#organization` },
+      inLanguage: "en-US",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${siteUrl}/#app`,
+      name: "SeedanceAPI",
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "Web",
+      url: siteUrl,
+      description,
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        description: "Pay as you go prepaid balance",
+      },
+    },
+  ],
 };
 
 export default function RootLayout({
@@ -52,6 +134,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
       >
         <body className="min-h-screen bg-paper font-sans antialiased text-ink">
+          <JsonLd data={jsonLd} />
           <Header />
           <main>{children}</main>
           <Footer />

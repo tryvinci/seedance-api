@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { listModels, listFamilies } from "@seedance/models";
 import { getDocsUrl } from "@/lib/docs-url";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 export default function HomePage() {
   const families = listFamilies();
@@ -22,29 +27,29 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-black/20" aria-hidden />
           <div className="relative mx-auto max-w-4xl px-6 pb-20 pt-24 text-center sm:pt-28">
             <p className="mb-6 inline-block rounded-full border border-white/20 bg-white/10 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-white/85">
-              SeedDance 2.5 &amp; Seedream
+              SeedDance 2.5 &amp; Seedream 5.0
             </p>
             <h1 className="font-display text-[clamp(2.5rem,7vw,4.5rem)] leading-[1.05] tracking-tight text-white">
               The API for{" "}
-              <span className="italic">SeedDance</span> &amp; Seedream
+              <span className="italic">SeedDance 2.5</span> &amp; Seedream 5.0
             </h1>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-white/75">
-              Production-ready REST API for cinematic video and image generation.
-              Prepaid credits, MCP access, and full API documentation.
+              Generate cinematic video and images with a simple REST API.
+              Pay as you go, connect agents via MCP, and ship faster.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <a
-                href={getDocsUrl("/quickstart")}
+              <Link
+                href="/dashboard"
                 className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-medium text-hero transition hover:bg-white/90"
               >
-                Get started
-              </a>
-              <Link
-                href="/models"
+                Get API key
+              </Link>
+              <a
+                href={getDocsUrl()}
                 className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-white/10 px-6 py-3 text-sm font-medium text-white backdrop-blur-sm transition hover:bg-white/20"
               >
-                Browse models
-              </Link>
+                Documentation
+              </a>
             </div>
             <div className="mx-auto mt-16 grid max-w-lg grid-cols-3 gap-6 text-center">
               <div>
@@ -70,7 +75,7 @@ export default function HomePage() {
             Model families
           </h2>
           <p className="mx-auto mt-4 max-w-xl text-center text-ink-soft">
-            Every SeedDance and Seedream variant with transparent credit pricing.
+            Every SeedDance and Seedream variant — video per second, images per generation.
           </p>
           <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {families.map((family) => {

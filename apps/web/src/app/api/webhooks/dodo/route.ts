@@ -1,42 +1,17 @@
 import { NextResponse } from "next/server";
 import { drizzle } from "drizzle-orm/d1";
-import { addCredits } from "@seedance/db";
-import { CREDIT_PACKS } from "@seedance/models";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { verifyDodoWebhook } from "@/lib/dodo";
 import { isDevWebhookBypass } from "@/lib/webhook-dev";
-
-async function verifyDodoWebhook(
-  payload: string,
-  headers: Headers,
-  secret: string,
-): Promise<boolean> {
-  const msgId = headers.get("webhook-id");
-  const timestamp = headers.get("webhook-timestamp");
-  const signature = headers.get("webhook-signature");
-  if (!msgId || !timestamp || !signature) return false;
-
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    "raw",
-    encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const toSign = `${msgId}.${timestamp}.${payload}`;
-  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(toSign));
-  const expected = btoa(String.fromCharCode(...new Uint8Array(sig)));
-
-  const signatures = signature.split(" ");
-  return signatures.some((s) => {
-    const parts = s.split(",");
-    return parts.length === 2 && parts[1] === expected;
-  });
-}
+import {
+  creditSucceededPayment,
+  type DodoPayment,
+} from "@/lib/credit-payment";
 
 export async function POST(req: Request) {
   const payload = await req.text();
-  const secret = process.env.DODO_WEBHOOK_SECRET;
+  const secret =
+    process.env.DODO_WEBHOOK_SECRET ?? process.env.DODO_PAYMENTS_WEBHOOK_KEY;
   if (!secret) {
     return NextResponse.json({ error: "Not configured" }, { status: 503 });
   }
@@ -49,37 +24,43 @@ export async function POST(req: Request) {
     }
   }
 
-  const event = JSON.parse(payload) as {
+  let event: {
     type: string;
-    data?: {
-      metadata?: Record<string, string>;
+    data?: DodoPayment & {
       payment_id?: string;
       id?: string;
     };
   };
+  try {
+    event = JSON.parse(payload);
+  } catch {
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
 
-  if (
-    event.type === "payment.succeeded" ||
-    event.type === "checkout.completed"
-  ) {
+  // payment.succeeded is the source of truth for one-time top-ups.
+  if (event.type === "payment.succeeded") {
+    const paymentId = event.data?.payment_id ?? event.data?.id;
     const metadata = event.data?.metadata ?? {};
     const userId = metadata.clerk_user_id;
-    const packId = metadata.pack_id;
-    const paymentId = event.data?.payment_id ?? event.data?.id;
-
-    if (!userId || !packId) {
+    if (!userId || !paymentId) {
+      console.error("Dodo webhook missing metadata:", {
+        type: event.type,
+        paymentId,
+        metadata,
+      });
       return NextResponse.json({ error: "Missing metadata" }, { status: 400 });
-    }
-
-    const pack = CREDIT_PACKS.find((p) => p.id === packId);
-    if (!pack) {
-      return NextResponse.json({ error: "Invalid pack" }, { status: 400 });
     }
 
     try {
       const { env } = await getCloudflareContext({ async: true });
       const db = drizzle(env.DB);
-      await addCredits(db, userId, pack.credits, "purchase", paymentId);
+      // Webhook payload may omit status; treat payment.succeeded as paid.
+      await creditSucceededPayment(
+        db,
+        userId,
+        { ...event.data, status: event.data?.status ?? "succeeded" },
+        paymentId,
+      );
     } catch (err) {
       console.error("Failed to credit wallet:", err);
       return NextResponse.json({ error: "Credit failed" }, { status: 500 });

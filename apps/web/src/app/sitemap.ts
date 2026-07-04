@@ -2,29 +2,40 @@ import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const base = "https://seedanceapi.us";
-  const docsBase = process.env.NEXT_PUBLIC_DOCS_URL ?? "https://seedanceapi.us/docs";
+  const docsBase = "https://seedanceapi.us/docs";
 
-  const marketingPages = ["", "/models", "/pricing", "/agents", "/llms.txt", "/llms-full.txt"];
+  const marketingPages: { path: string; priority: number; freq: "weekly" | "monthly" }[] = [
+    { path: "", priority: 1, freq: "weekly" },
+    { path: "/models", priority: 0.9, freq: "weekly" },
+    { path: "/pricing", priority: 0.9, freq: "weekly" },
+    { path: "/agents", priority: 0.8, freq: "monthly" },
+    { path: "/llms.txt", priority: 0.7, freq: "weekly" },
+    { path: "/llms-full.txt", priority: 0.6, freq: "weekly" },
+    { path: "/openapi.json", priority: 0.5, freq: "monthly" },
+  ];
+
   const docsPages = [
     "",
     "/quickstart",
     "/authentication",
     "/videos",
     "/images",
+    "/media",
     "/models",
     "/errors",
     "/agents",
+    "/api-reference/introduction",
   ];
 
   return [
-    ...marketingPages.map((path) => ({
+    ...marketingPages.map(({ path, priority, freq }) => ({
       url: `${base}${path}`,
       lastModified: new Date(),
-      changeFrequency: (path === "" ? "weekly" : "monthly") as "weekly" | "monthly",
-      priority: path === "" ? 1 : 0.8,
+      changeFrequency: freq,
+      priority,
     })),
     ...docsPages.map((path) => ({
-      url: `${docsBase.replace(/\/$/, "")}${path}`,
+      url: `${docsBase}${path}`,
       lastModified: new Date(),
       changeFrequency: "monthly" as const,
       priority: path === "" ? 0.9 : 0.7,

@@ -1,11 +1,11 @@
-# Seedance API Agent Instructions
+# SeedanceAPI Agent Instructions
 
-You have access to the Seedance API for AI video and image generation.
+You have access to SeedanceAPI for AI video and image generation.
 
 ## Capabilities
 
-- **Video**: SeedDance 2.5, 2.0, 2.0 Fast, 2.0 Mini, 1.5 Pro, 1.0 Pro
-- **Image**: Seedream 5.0, 5.0 Lite, 4.5, 4.0
+- **Video**: SeedDance 2.5, 2.0, 2.0 Fast, 2.0 Mini, 1.5 Pro, 1.0 Pro (billed per second)
+- **Image**: Seedream 5.0, 5.0 Lite, 4.5, 4.0 (billed per generation)
 - **Modes**: text-to-video, image-to-video, reference-to-video, video-extend, video-edit, text-to-image, image-edit, sequential
 
 ## API Base
@@ -14,15 +14,27 @@ You have access to the Seedance API for AI video and image generation.
 
 ## Authentication
 
-Always use the user's Seedance API key (created at /dashboard, format `ak_...`):
+Always use the user's SeedanceAPI key (from /dashboard, format `ak_...`):
+
 ```
 Authorization: Bearer ak_...
 ```
 
+## Media inputs
+
+Upload files first, then pass the returned URL:
+
+```
+POST /v1/media/upload  (multipart field: file)
+→ { "url": "https://..." }
+```
+
+Use `url` as `image_url` or `video_url` on generation requests. Public HTTPS URLs also work without uploading.
+
 ## Video generation flow
 
 1. `POST /v1/videos` with model, prompt, and options
-2. Receive `{ id, status: "pending" }`
+2. Receive `{ id, status: "pending", price_usd }`
 3. Poll `GET /v1/generations/{id}` every 3-5 seconds
 4. When `status === "completed"`, use `output_url`
 
@@ -41,8 +53,8 @@ If MCP is configured, prefer these tools:
 
 ## Error handling
 
-- 402: Insufficient credits — tell user to buy more at /pricing
-- 502: Upstream error — retry once, then report failure
+- 402: Insufficient balance — tell user to add funds at /pricing
+- 502: Generation failed — retry once, then report failure (messages are user-safe)
 - Use `Idempotency-Key` header on video requests to prevent double charges
 
 ## Model selection guide

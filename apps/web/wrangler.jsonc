@@ -13,13 +13,16 @@
     {
       "binding": "DB",
       "database_name": "seedance-db",
-      "database_id": "3e049b4b-c528-441e-992b-363a468ade9a"
+      "database_id": "3e049b4b-c528-441e-992b-363a468ade9a",
+      "migrations_dir": "../../packages/db/migrations"
     }
   ],
   "vars": {
     "API_BASE_URL": "https://api.seedanceapi.us",
     "CUSTOM_DOMAIN": "seedanceapi.us",
-    "MINTLIFY_DOCS_HOST": "seedanceus.mintlify.site"
+    "MINTLIFY_DOCS_HOST": "seedanceus.mintlify.site",
+    "NEXT_PUBLIC_APP_URL": "https://seedanceapi.us",
+    "DODO_PAYMENTS_ENV": "live"
   },
   "routes": [
     {

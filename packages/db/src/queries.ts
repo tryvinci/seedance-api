@@ -43,6 +43,16 @@ export async function addCredits(
   reason: string,
   dodoPaymentId?: string,
 ) {
+  // Idempotent on payment id so webhook retries do not double-credit.
+  if (dodoPaymentId) {
+    const existing = await db
+      .select()
+      .from(creditLedger)
+      .where(eq(creditLedger.dodoPaymentId, dodoPaymentId))
+      .get();
+    if (existing) return existing.id;
+  }
+
   await ensureWallet(db, ownerId);
   const ts = now();
   const ledgerId = crypto.randomUUID();

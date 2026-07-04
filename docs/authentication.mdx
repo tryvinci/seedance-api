@@ -1,17 +1,17 @@
 ---
 title: Authentication
-description: Authenticate with Clerk user API keys (ak_...).
+description: Authenticate with API keys (ak_...).
 ---
 
-The Seedance API uses [Clerk API keys](https://clerk.com/docs/guides/development/machine-auth/api-keys) for machine authentication. Each user creates their own keys in the dashboard — keys are tied to their account.
+Every request (except health checks) requires an API key tied to your SeedanceAPI account.
 
 ## Create an API key
 
 1. Sign in at [seedanceapi.us/dashboard](https://seedanceapi.us/dashboard)
-2. Open the **API keys** section and create a new key
-3. Copy the secret immediately (`ak_...`) — it is only shown once
+2. Your **Default** key is created automatically — copy it from Quickstart
+3. Or click **Create API key** for additional keys
 
-You can also manage keys from your account menu → Profile → API Keys.
+Secrets are shown when a key is created. Store them securely.
 
 ## Authorization header
 
@@ -34,10 +34,6 @@ For video generation, pass an `Idempotency-Key` header to prevent duplicate char
 Idempotency-Key: unique-request-id-123
 ```
 
-## Enable API keys (app owners)
-
-Enable API keys once in [Clerk Dashboard → Platform → API keys](https://dashboard.clerk.com/~/platform/api-keys). End users then create keys through your app, not from the Clerk dashboard directly.
-
 <Warning>
-  Never use your Clerk secret key (`sk_live_...`) as a client API token. Users must create `ak_...` keys.
+  Only use `ak_...` keys from your dashboard. Never send platform admin secrets as client tokens.
 </Warning>

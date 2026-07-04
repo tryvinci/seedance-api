@@ -19,9 +19,12 @@ packages/
 
 ```bash
 pnpm install
-pnpm dev:api   # API on :8787
-pnpm dev:web   # Web on :3000
-pnpm dev:docs  # Docs preview on :3333
+pnpm dev        # API :8787 + web :3000 (applies local DB migrations)
+# optional:
+pnpm dev:all    # also docs on :3333
+pnpm dev:api    # API only
+pnpm dev:web    # web only
+pnpm dev:docs   # docs only
 ```
 
 See [DEPLOY.md](./DEPLOY.md) for production deployment.
@@ -29,7 +32,7 @@ See [DEPLOY.md](./DEPLOY.md) for production deployment.
 ## Features
 
 - **Models**: SeedDance 2.5, 2.0, 2.0 Fast, 2.0 Mini, 1.5 Pro, 1.0 Pro + Seedream 5.0, 4.5, 4.0
-- **Auth**: Clerk API keys
-- **Billing**: Prepaid credits via Dodo Payments
+- **Auth**: User API keys (`ak_...`)
+- **Billing**: Prepaid USD balance (video per second, images per generation)
 - **MCP**: Streamable HTTP MCP server at `/mcp`
 - **SEO**: sitemap, robots.txt, llms.txt, llms-full.txt, OpenAPI, JSON-LD

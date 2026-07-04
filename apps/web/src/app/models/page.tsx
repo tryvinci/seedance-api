@@ -1,60 +1,64 @@
-import { listModels, listFamilies, modelToPublic } from "@seedance/models";
 import type { Metadata } from "next";
+import Link from "next/link";
+import { ModelCatalog } from "@/components/model-catalog";
+import { getDocsUrl } from "@/lib/docs-url";
 
 export const metadata: Metadata = {
   title: "Models",
-  description: "All SeedDance and Seedream models available via the Seedance API.",
+  description:
+    "Browse SeedDance video and Seedream image models with USD pricing. Text-to-video, image-to-video, text-to-image, and more.",
+  alternates: { canonical: "/models" },
+  openGraph: {
+    title: "Models | SeedanceAPI",
+    description:
+      "SeedDance video and Seedream image models with USD pricing.",
+    url: "/models",
+  },
 };
 
 export default function ModelsPage() {
-  const families = listFamilies();
-
   return (
     <div className="paper-grain mx-auto max-w-6xl px-6 py-16">
-      <h1 className="font-display text-4xl tracking-tight text-ink">Models</h1>
-      <p className="mt-4 max-w-2xl text-ink-soft">
-        Every SeedDance video and Seedream image variant, with credit pricing.
-      </p>
+      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-2xl">
+          <h1 className="font-display text-4xl tracking-tight text-ink">
+            Models
+          </h1>
+          <p className="mt-4 text-ink-soft">
+            SeedDance video and Seedream image endpoints. Copy a model ID into{" "}
+            <code className="rounded bg-paper-2 px-1.5 py-0.5 font-mono text-xs text-ink">
+              {"{ \"model\": \"…\" }"}
+            </code>{" "}
+            on{" "}
+            <code className="rounded bg-paper-2 px-1.5 py-0.5 font-mono text-xs text-ink">
+              POST /v1/videos
+            </code>{" "}
+            or{" "}
+            <code className="rounded bg-paper-2 px-1.5 py-0.5 font-mono text-xs text-ink">
+              POST /v1/images
+            </code>
+            .
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/pricing"
+            className="inline-flex items-center rounded-full border border-paper-edge bg-white px-4 py-2 text-sm font-medium text-ink-2 transition hover:border-ink-soft hover:bg-paper-2 hover:text-ink"
+          >
+            Pricing
+          </Link>
+          <a
+            href={getDocsUrl("/models")}
+            className="inline-flex items-center rounded-full bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:bg-ink-2"
+          >
+            Docs
+          </a>
+        </div>
+      </div>
 
-      {families.map((family) => {
-        const models = listModels({ family });
-        return (
-          <section key={family} id={family} className="mt-16">
-            <h2 className="font-display text-2xl capitalize text-ink">
-              {family.replace(/-/g, " ")}
-            </h2>
-            <div className="mt-6 overflow-hidden rounded-2xl border border-paper-edge bg-white">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-paper-edge bg-paper-2/50">
-                  <tr>
-                    <th className="px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-ink-soft">Model ID</th>
-                    <th className="px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-ink-soft">Variant</th>
-                    <th className="px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-ink-soft">Credits</th>
-                    <th className="px-4 py-3 font-mono text-[11px] uppercase tracking-wider text-ink-soft">Notes</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {models.map((m) => {
-                    const pub = modelToPublic(m);
-                    return (
-                      <tr key={m.id} className="border-b border-paper-edge/80">
-                        <td className="px-4 py-3 font-mono text-xs text-accent">
-                          {pub.id}
-                        </td>
-                        <td className="px-4 py-3 text-ink-2">{pub.variant}</td>
-                        <td className="px-4 py-3 text-ink">{pub.credits}</td>
-                        <td className="px-4 py-3 text-ink-soft">
-                          {pub.description}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        );
-      })}
+      <div className="mt-12">
+        <ModelCatalog showDescription />
+      </div>
     </div>
   );
 }

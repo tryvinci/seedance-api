@@ -59,7 +59,12 @@ npx wrangler secret put CLERK_SECRET_KEY
 npx wrangler secret put CLERK_WEBHOOK_SECRET
 npx wrangler secret put DODO_PAYMENTS_API_KEY
 npx wrangler secret put DODO_WEBHOOK_SECRET
+# Single pay-what-you-want product id (pdt_...)
+npx wrangler secret put DODO_TOPUP_PRODUCT_ID
 ```
+
+
+`DODO_PAYMENTS_ENV=live` and `NEXT_PUBLIC_APP_URL` are set in `apps/web/wrangler.jsonc` `vars`.
 
 ## 4. Environment variables
 
@@ -72,8 +77,11 @@ CLERK_WEBHOOK_SECRET=whsec_...
 DODO_PAYMENTS_API_KEY=...
 DODO_PAYMENTS_ENV=test
 DODO_WEBHOOK_SECRET=...
+# Single PWYW product for real test-mode checkout (otherwise leave API key empty for instant local credit)
+# DODO_TOPUP_PRODUCT_ID=pdt_...
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
+
 
 ### API Worker (`.dev.vars` for local dev)
 
@@ -115,7 +123,8 @@ In Cloudflare dashboard, add custom domains:
 
 ### Dodo Payments webhook
 - URL: `https://seedanceapi.us/api/webhooks/dodo`
-- Events: `payment.succeeded`, `checkout.completed`
+- Events: `payment.succeeded`
+- Products: one pay-what-you-want one-time product; set `DODO_TOPUP_PRODUCT_ID` to the `pdt_...` id (packs are UI presets)
 
 ## 8. Mintlify docs (subpath)
 
@@ -151,3 +160,4 @@ pnpm dev:docs
 | `WAVESPEED_API_KEY` | API | Fallback provider |
 | `DODO_PAYMENTS_API_KEY` | Web | Credit purchases |
 | `DODO_WEBHOOK_SECRET` | Web | Payment verification |
+| `DODO_TOPUP_PRODUCT_ID` | Web | Pay-what-you-want product for all top-ups |

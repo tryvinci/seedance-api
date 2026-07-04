@@ -3,13 +3,14 @@ import {
   videoParamsSchema,
   type ModelDefinition,
 } from "./types";
+import { usdToCredits } from "./pricing";
 
 function video(
   id: string,
   displayName: string,
   family: string,
   variant: ModelDefinition["variant"],
-  credits: number,
+  priceUsd: number,
   providers: ModelDefinition["providers"],
   description: string,
   opts?: Partial<Pick<ModelDefinition, "aliasOf" | "available">>,
@@ -21,7 +22,9 @@ function video(
     kind: "video",
     variant,
     description,
-    credits,
+    priceUsd,
+    priceUnit: "second",
+    credits: usdToCredits(priceUsd),
     providers,
     paramsSchema: videoParamsSchema,
     available: opts?.available ?? true,
@@ -34,7 +37,7 @@ function image(
   displayName: string,
   family: string,
   variant: ModelDefinition["variant"],
-  credits: number,
+  priceUsd: number,
   providers: ModelDefinition["providers"],
   description: string,
 ): ModelDefinition {
@@ -45,7 +48,9 @@ function image(
     kind: "image",
     variant,
     description,
-    credits,
+    priceUsd,
+    priceUnit: "generation",
+    credits: usdToCredits(priceUsd),
     providers,
     paramsSchema: imageParamsSchema,
     available: true,
@@ -59,7 +64,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.5 Text-to-Video",
     "seedance-2.5",
     "text-to-video",
-    120,
+    0.16,
     {
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/text-to-video",
@@ -71,7 +76,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.5 Image-to-Video",
     "seedance-2.5",
     "image-to-video",
-    120,
+    0.16,
     {
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/image-to-video",
@@ -83,7 +88,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.5 Reference-to-Video",
     "seedance-2.5",
     "reference-to-video",
-    140,
+    0.16,
     {
       wavespeed: "bytedance/seedance-2.0/text-to-video",
     },
@@ -96,7 +101,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Text-to-Video",
     "seedance-2.0",
     "text-to-video",
-    120,
+    0.16,
     {
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/text-to-video",
@@ -108,7 +113,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Image-to-Video",
     "seedance-2.0",
     "image-to-video",
-    120,
+    0.16,
     {
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/image-to-video",
@@ -120,7 +125,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Reference-to-Video",
     "seedance-2.0",
     "reference-to-video",
-    140,
+    0.16,
     {
       wavespeed: "bytedance/seedance-2.0/text-to-video",
     },
@@ -131,7 +136,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Video Extend",
     "seedance-2.0",
     "video-extend",
-    100,
+    0.16,
     {
       wavespeed: "bytedance/seedance-2.0/video-extend",
     },
@@ -142,7 +147,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Video Edit",
     "seedance-2.0",
     "video-edit",
-    110,
+    0.2,
     {
       wavespeed: "bytedance/seedance-2.0/video-edit",
     },
@@ -153,7 +158,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Text-to-Video Turbo",
     "seedance-2.0",
     "text-to-video",
-    90,
+    0.18,
     {
       wavespeed: "bytedance/seedance-2.0/text-to-video-turbo",
     },
@@ -164,7 +169,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Image-to-Video Turbo",
     "seedance-2.0",
     "image-to-video",
-    90,
+    0.18,
     {
       wavespeed: "bytedance/seedance-2.0/image-to-video-turbo",
     },
@@ -177,7 +182,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Fast Text-to-Video",
     "seedance-2.0-fast",
     "text-to-video",
-    80,
+    0.13,
     {
       modelark: "dreamina-seedance-2-0-fast-260128",
       wavespeed: "bytedance/seedance-2.0-fast/text-to-video",
@@ -189,7 +194,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Fast Image-to-Video",
     "seedance-2.0-fast",
     "image-to-video",
-    80,
+    0.13,
     {
       modelark: "dreamina-seedance-2-0-fast-260128",
       wavespeed: "bytedance/seedance-2.0-fast/image-to-video",
@@ -201,7 +206,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Fast Text-to-Video Turbo",
     "seedance-2.0-fast",
     "text-to-video",
-    70,
+    0.16,
     {
       wavespeed: "bytedance/seedance-2.0-fast/text-to-video-turbo",
     },
@@ -212,7 +217,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Fast Image-to-Video Turbo",
     "seedance-2.0-fast",
     "image-to-video",
-    70,
+    0.16,
     {
       wavespeed: "bytedance/seedance-2.0-fast/image-to-video-turbo",
     },
@@ -223,7 +228,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Fast Video Extend",
     "seedance-2.0-fast",
     "video-extend",
-    70,
+    0.13,
     {
       wavespeed: "bytedance/seedance-2.0-fast/video-extend",
     },
@@ -234,7 +239,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Fast Video Edit",
     "seedance-2.0-fast",
     "video-edit",
-    75,
+    0.17,
     {
       wavespeed: "bytedance/seedance-2.0-fast/video-edit",
     },
@@ -247,7 +252,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Mini Text-to-Video",
     "seedance-2.0-mini",
     "text-to-video",
-    85,
+    0.16,
     {
       wavespeed: "bytedance/seedance-2.0-mini/text-to-video",
     },
@@ -258,7 +263,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Mini Image-to-Video",
     "seedance-2.0-mini",
     "image-to-video",
-    85,
+    0.16,
     {
       wavespeed: "bytedance/seedance-2.0-mini/image-to-video",
     },
@@ -269,7 +274,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Mini Video Extend",
     "seedance-2.0-mini",
     "video-extend",
-    75,
+    0.16,
     {
       wavespeed: "bytedance/seedance-2.0-mini/video-extend",
     },
@@ -280,7 +285,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Mini Video Edit",
     "seedance-2.0-mini",
     "video-edit",
-    80,
+    0.2,
     {
       wavespeed: "bytedance/seedance-2.0-mini/video-edit",
     },
@@ -293,7 +298,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 1.5 Pro Text-to-Video",
     "seedance-1.5-pro",
     "text-to-video",
-    60,
+    0.06,
     {
       modelark: "seedance-1-5-pro-251215",
       wavespeed: "bytedance/seedance-v1.5-pro/text-to-video",
@@ -305,7 +310,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 1.5 Pro Image-to-Video",
     "seedance-1.5-pro",
     "image-to-video",
-    60,
+    0.06,
     {
       modelark: "seedance-1-5-pro-251215",
       wavespeed: "bytedance/seedance-v1.5-pro/image-to-video",
@@ -317,7 +322,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 1.0 Pro Text-to-Video",
     "seedance-1.0-pro",
     "text-to-video",
-    50,
+    0.06,
     {
       modelark: "seedance-1-0-pro-250528",
       wavespeed: "bytedance/seedance-v1-pro/text-to-video",
@@ -329,7 +334,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 1.0 Pro Image-to-Video",
     "seedance-1.0-pro",
     "image-to-video",
-    50,
+    0.06,
     {
       modelark: "seedance-1-0-pro-250528",
       wavespeed: "bytedance/seedance-v1-pro/image-to-video",
@@ -341,7 +346,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 1.0 Pro Fast Text-to-Video",
     "seedance-1.0-pro",
     "text-to-video",
-    40,
+    0.01,
     {
       modelark: "seedance-1-0-pro-fast-251015",
       wavespeed: "bytedance/seedance-v1-pro-fast/text-to-video",
@@ -355,7 +360,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedream 5.0 Text-to-Image",
     "seedream-5.0",
     "text-to-image",
-    15,
+    0.04,
     {
       modelark: "seedream-5-0-260128",
       wavespeed: "bytedance/seedream-v5.0",
@@ -367,7 +372,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedream 5.0 Lite Text-to-Image",
     "seedream-5.0-lite",
     "text-to-image",
-    10,
+    0.04,
     {
       modelark: "seedream-5-0-lite-260128",
       wavespeed: "bytedance/seedream-v5.0-lite",
@@ -379,7 +384,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedream 5.0 Lite Image Edit",
     "seedream-5.0-lite",
     "image-edit",
-    12,
+    0.04,
     {
       modelark: "seedream-5-0-lite-260128",
       wavespeed: "bytedance/seedream-v5.0-lite/edit",
@@ -393,7 +398,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedream 4.5 Text-to-Image",
     "seedream-4.5",
     "text-to-image",
-    12,
+    0.04,
     {
       modelark: "seedream-4-5-251128",
       wavespeed: "bytedance/seedream-v4.5",
@@ -405,7 +410,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedream 4.5 Image Edit",
     "seedream-4.5",
     "image-edit",
-    14,
+    0.04,
     {
       modelark: "seedream-4-5-251128",
       wavespeed: "bytedance/seedream-v4.5/edit",
@@ -417,7 +422,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedream 4.5 Sequential",
     "seedream-4.5",
     "sequential",
-    14,
+    0.04,
     {
       modelark: "seedream-4-5-251128",
       wavespeed: "bytedance/seedream-v4.5/sequential",
@@ -431,7 +436,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedream 4.0 Text-to-Image",
     "seedream-4.0",
     "text-to-image",
-    8,
+    0.03,
     {
       modelark: "seedream-4-0-250828",
       wavespeed: "bytedance/seedream-v4",
@@ -443,7 +448,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedream 4.0 Image Edit",
     "seedream-4.0",
     "image-edit",
-    10,
+    0.03,
     {
       modelark: "seedream-4-0-250828",
       wavespeed: "bytedance/seedream-v4/edit",
@@ -455,7 +460,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedream 4.0 Sequential",
     "seedream-4.0",
     "sequential",
-    10,
+    0.03,
     {
       modelark: "seedream-4-0-250828",
       wavespeed: "bytedance/seedream-v4/sequential",

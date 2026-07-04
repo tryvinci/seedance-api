@@ -40,6 +40,8 @@ export type VideoParams = z.infer<typeof videoParamsSchema>;
 export type ImageParams = z.infer<typeof imageParamsSchema>;
 
 export type ModelKind = "video" | "image";
+/** How `priceUsd` is billed and displayed. */
+export type PriceUnit = "second" | "generation";
 export type VideoVariant =
   | "text-to-video"
   | "image-to-video"
@@ -62,6 +64,10 @@ export interface ModelDefinition {
   kind: ModelKind;
   variant: ModelVariant;
   description: string;
+  /** Unit price in USD (`/sec` for video, `/gen` for image). */
+  priceUsd: number;
+  priceUnit: PriceUnit;
+  /** Internal ledger units for one unit (1s or 1 generation), in cents. */
   credits: number;
   aliasOf?: string;
   available: boolean;
@@ -74,5 +80,4 @@ export interface CreditPack {
   name: string;
   credits: number;
   priceUsd: number;
-  dodoProductId?: string;
 }

@@ -3,7 +3,7 @@ title: Image generation
 description: Generate images synchronously with POST /v1/images.
 ---
 
-`POST /v1/images` generates images synchronously. Credits are deducted when the request succeeds.
+`POST /v1/images` generates images synchronously. Balance is charged per generation when the request succeeds.
 
 ## Request body
 
@@ -33,6 +33,6 @@ description: Generate images synchronously with POST /v1/images.
   "status": "completed",
   "model": "seedream-5.0/text-to-image",
   "output_urls": ["https://..."],
-  "credits_cost": 15
+  "price_usd": 0.06
 }
 ```

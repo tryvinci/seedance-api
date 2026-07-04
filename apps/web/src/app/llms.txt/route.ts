@@ -4,8 +4,13 @@ export async function GET() {
   const models = listModels();
   const families = listFamilies();
 
-  const content = `# Seedance API
-> REST API for SeedDance video and Seedream image generation models by ByteDance.
+  const content = `# SeedanceAPI
+> REST API for SeedDance video and Seedream image generation.
+
+## About
+SeedanceAPI is a pay-as-you-go API for SeedDance (video) and Seedream (image) models.
+Authenticate with an API key, upload media when needed, and generate video or images.
+Billing is prepaid USD: video per second, images per generation.
 
 ## Overview
 - Website: https://seedanceapi.us
@@ -14,17 +19,21 @@ export async function GET() {
 - MCP: https://api.seedanceapi.us/mcp
 - Docs: https://seedanceapi.us/docs
 - Pricing: https://seedanceapi.us/pricing
+- Models: https://seedanceapi.us/models
 - For Agents: https://seedanceapi.us/agents
+- Sitemap: https://seedanceapi.us/sitemap.xml
+
 
 ## Authentication
-Bearer token with Clerk API key: \`Authorization: Bearer ak_...\`
+\`Authorization: Bearer ak_...\` (API key from the dashboard)
 
 ## Key endpoints
 - GET /v1/models — list all models
-- POST /v1/videos — async video generation
-- POST /v1/images — sync image generation
+- POST /v1/media/upload — upload inputs for image_url / video_url
+- POST /v1/videos — async video generation (billed per second)
+- POST /v1/images — sync image generation (billed per generation)
 - GET /v1/generations/:id — poll generation status
-- GET /v1/credits — check credit balance
+- GET /v1/credits — check balance (USD)
 
 ## Model families
 ${families.map((f) => `- ${f}`).join("\n")}
@@ -37,7 +46,10 @@ ${models
     ),
   )
   .slice(0, 10)
-  .map((m) => `- ${m.id} (${m.credits} credits) — ${m.description}`)
+  .map(
+    (m) =>
+      `- ${m.id} ($${m.priceUsd.toFixed(2)}/${m.priceUnit === "second" ? "sec" : "gen"}) — ${m.description}`,
+  )
   .join("\n")}
 
 ## MCP tools

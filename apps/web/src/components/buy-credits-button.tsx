@@ -4,9 +4,13 @@ import { useState } from "react";
 
 export function BuyCreditsButton({
   packId,
-  className,
+  label = "Buy",
+  variant = "primary",
+  className = "",
 }: {
   packId: string;
+  label?: string;
+  variant?: "primary" | "secondary";
   className?: string;
 }) {
   const [loading, setLoading] = useState(false);
@@ -20,11 +24,15 @@ export function BuyCreditsButton({
         body: JSON.stringify({ packId }),
       });
       const data = await res.json();
+      if (data.credited) {
+        window.location.href = "/dashboard?payment=success";
+        return;
+      }
       if (data.checkout_url) {
         window.location.href = data.checkout_url;
-      } else {
-        alert(data.error ?? "Checkout failed");
+        return;
       }
+      alert(data.error ?? "Checkout failed");
     } catch {
       alert("Checkout failed");
     } finally {
@@ -32,13 +40,19 @@ export function BuyCreditsButton({
     }
   }
 
+  const styles =
+    variant === "primary"
+      ? "bg-ink text-paper hover:bg-ink-2"
+      : "border border-paper-edge bg-white text-ink hover:border-ink-soft hover:bg-paper-2";
+
   return (
     <button
+      type="button"
       onClick={handleBuy}
       disabled={loading}
-      className={`rounded-full bg-ink py-2.5 text-sm font-medium text-paper transition hover:bg-ink-2 disabled:opacity-50 ${className ?? ""}`}
+      className={`inline-flex w-full items-center justify-center rounded-full px-4 py-2.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${className}`}
     >
-      {loading ? "Loading..." : "Buy credits"}
+      {loading ? "Working…" : label}
     </button>
   );
 }

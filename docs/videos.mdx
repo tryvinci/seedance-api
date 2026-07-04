@@ -3,7 +3,7 @@ title: Video generation
 description: Submit async video jobs with POST /v1/videos.
 ---
 
-`POST /v1/videos` submits an asynchronous video generation job. Credits are held when the job starts and committed when it completes.
+`POST /v1/videos` submits an asynchronous video generation job. Balance is reserved when the job starts and charged when it completes (video is billed per second).
 
 ## Request body
 
@@ -27,8 +27,8 @@ description: Submit async video jobs with POST /v1/videos.
 | `aspect_ratio` | No | e.g. `16:9`, `9:16`, `1:1` |
 | `resolution` | No | e.g. `720p`, `1080p` |
 | `duration` | No | Length in seconds |
-| `image_url` | For image-to-video | Source image URL |
-| `video_url` | For video-to-video | Source video URL |
+| `image_url` | For image-to-video | Source image URL (upload via [Media upload](/media) or any public HTTPS URL) |
+| `video_url` | For video-to-video | Source video URL (upload via [Media upload](/media) or any public HTTPS URL) |
 
 ## Response (202)
 
@@ -38,7 +38,7 @@ description: Submit async video jobs with POST /v1/videos.
   "status": "pending",
   "model": "seedance-2.5/text-to-video",
   "kind": "video",
-  "credits_cost": 120
+  "price_usd": 0.78
 }
 ```
 

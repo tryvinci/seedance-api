@@ -1,6 +1,6 @@
 # Documentation
 
-Docs live at **https://seedanceapi.us/docs** (subpath on the main domain), proxied by the Cloudflare worker in `apps/web/worker.js`.
+Docs live at **https://seedanceapi.us/docs** (subpath on the main domain).
 
 ## Local preview
 

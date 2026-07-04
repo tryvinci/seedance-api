@@ -6,7 +6,11 @@ import {
   buildOpenApiSpec,
   videoParamsSchema,
   imageParamsSchema,
+  creditsToUsd,
+  chargeCredits,
+  chargeUsd,
 } from "@seedance/models";
+import { publicErrorPayload } from "../lib/public-error";
 import {
   getWalletBalance,
   holdCredits,
@@ -62,7 +66,7 @@ app.get("/v1/credits", authMiddleware, async (c) => {
   const { ownerId } = c.get("auth") as AuthContext;
   const db = getDb(c.env);
   const balance = await getWalletBalance(db, ownerId);
-  return c.json({ credits: balance });
+  return c.json({ balance_usd: creditsToUsd(balance) });
 });
 
 app.get("/v1/generations", authMiddleware, async (c) => {
@@ -113,12 +117,21 @@ app.post("/v1/videos", authMiddleware, async (c) => {
 
   const db = getDb(c.env);
   const generationId = crypto.randomUUID();
+  const costCredits = chargeCredits(model, { duration: parsed.data.duration });
+  const costUsd = chargeUsd(model, { duration: parsed.data.duration });
 
   try {
-    await holdCredits(db, ownerId, model.credits, generationId);
+    await holdCredits(db, ownerId, costCredits, generationId);
   } catch (e) {
     if (e instanceof Error && e.message === "INSUFFICIENT_CREDITS") {
-      return c.json({ error: "Insufficient credits", credits_required: model.credits }, 402);
+      return c.json(
+        {
+          error: "Insufficient balance",
+          price_usd: costUsd,
+          price_unit: model.priceUnit,
+        },
+        402,
+      );
     }
     throw e;
   }
@@ -141,11 +154,8 @@ app.post("/v1/videos", authMiddleware, async (c) => {
     taskId = result.taskId;
   } catch (err) {
     const { refundHold } = await import("@seedance/db");
-    await refundHold(db, ownerId, generationId, model.credits);
-    return c.json(
-      { error: "Generation failed", message: "Upstream generation failed" },
-      502,
-    );
+    await refundHold(db, ownerId, generationId, costCredits);
+    return c.json(publicErrorPayload(err), 502);
   }
 
   await createGeneration(db, {
@@ -154,7 +164,7 @@ app.post("/v1/videos", authMiddleware, async (c) => {
     kind: "video",
     canonicalModel: modelId,
     paramsJson: JSON.stringify(parsed.data),
-    creditsCost: model.credits,
+    creditsCost: costCredits,
     provider,
     providerTaskId: taskId,
     status: "pending",
@@ -169,7 +179,7 @@ app.post("/v1/videos", authMiddleware, async (c) => {
     ownerId,
     provider,
     taskId,
-    creditsCost: model.credits,
+    creditsCost: costCredits,
   };
   await c.env.POLL_WORKFLOW.create({ id: generationId, params: workflowParams });
 
@@ -180,7 +190,7 @@ app.post("/v1/videos", authMiddleware, async (c) => {
       canonicalModel: modelId,
       kind: "video",
       outputUrl: null,
-      creditsCost: model.credits,
+      creditsCost: costCredits,
       error: null,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -212,12 +222,21 @@ app.post("/v1/images", authMiddleware, async (c) => {
 
   const db = getDb(c.env);
   const generationId = crypto.randomUUID();
+  const costCredits = chargeCredits(model);
+  const costUsd = chargeUsd(model);
 
   try {
-    await holdCredits(db, ownerId, model.credits, generationId);
+    await holdCredits(db, ownerId, costCredits, generationId);
   } catch (e) {
     if (e instanceof Error && e.message === "INSUFFICIENT_CREDITS") {
-      return c.json({ error: "Insufficient credits", credits_required: model.credits }, 402);
+      return c.json(
+        {
+          error: "Insufficient balance",
+          price_usd: costUsd,
+          price_unit: model.priceUnit,
+        },
+        402,
+      );
     }
     throw e;
   }
@@ -250,7 +269,7 @@ app.post("/v1/images", authMiddleware, async (c) => {
       kind: "image",
       canonicalModel: modelId,
       paramsJson: JSON.stringify(parsed.data),
-      creditsCost: model.credits,
+      creditsCost: costCredits,
       provider,
       status: "completed",
     });
@@ -266,15 +285,98 @@ app.post("/v1/images", authMiddleware, async (c) => {
       status: "completed",
       model: modelId,
       output_urls: outputUrls,
-      credits_cost: model.credits,
+      price_usd: costUsd,
+      price_unit: model.priceUnit,
     });
   } catch (err) {
     const { refundHold } = await import("@seedance/db");
-    await refundHold(db, ownerId, generationId, model.credits);
+    await refundHold(db, ownerId, generationId, costCredits);
+    return c.json(publicErrorPayload(err), 502);
+  }
+});
+
+/**
+ * Upload media for use as image_url / video_url inputs.
+ * Proxies to the upstream media host; response has no provider branding.
+ */
+app.post("/v1/media/upload", authMiddleware, async (c) => {
+  const contentType = c.req.header("content-type") ?? "";
+  if (!contentType.includes("multipart/form-data")) {
     return c.json(
-      { error: "Generation failed", message: "Upstream generation failed" },
-      502,
+      { error: "Send multipart/form-data with a `file` field" },
+      400,
     );
+  }
+
+  let form: FormData;
+  try {
+    form = await c.req.formData();
+  } catch {
+    return c.json({ error: "Invalid multipart body" }, 400);
+  }
+
+  const entry = form.get("file");
+  if (!entry || typeof entry === "string") {
+    return c.json({ error: "Missing file field" }, 400);
+  }
+
+  const blob = entry as Blob & { name?: string };
+  const filename = blob.name || "upload";
+  const maxBytes = 100 * 1024 * 1024;
+  if (blob.size > maxBytes) {
+    return c.json(
+      { error: "File too large. Max 100MB; use a public URL for larger files." },
+      413,
+    );
+  }
+
+  try {
+    const upstream = new FormData();
+    upstream.append("file", blob, filename);
+
+    const res = await fetch(
+      "https://api.wavespeed.ai/api/v3/media/upload/binary",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${c.env.WAVESPEED_API_KEY}`,
+        },
+        body: upstream,
+      },
+    );
+
+    const text = await res.text();
+    if (!res.ok) {
+      console.error("Media upload failed:", res.status, text.slice(0, 200));
+      return c.json(publicErrorPayload(text), res.status === 413 ? 413 : 502);
+    }
+
+    const parsed = JSON.parse(text) as {
+      data?: {
+        download_url?: string;
+        url?: string;
+        type?: string;
+        filename?: string;
+        size?: number;
+      };
+    };
+    const url = parsed.data?.download_url ?? parsed.data?.url;
+    if (!url) {
+      return c.json(
+        { error: "Upload failed", message: "No URL returned from media host." },
+        502,
+      );
+    }
+
+    return c.json({
+      url,
+      type: parsed.data?.type ?? "file",
+      filename: parsed.data?.filename ?? filename,
+      size: parsed.data?.size ?? blob.size,
+    });
+  } catch (err) {
+    console.error("Media upload error:", err);
+    return c.json(publicErrorPayload(err), 502);
   }
 });
 
@@ -305,7 +407,7 @@ function formatGeneration(gen: {
     model: gen.canonicalModel,
     kind: gen.kind,
     output_url: gen.outputUrl,
-    credits_cost: gen.creditsCost,
+    price_usd: creditsToUsd(gen.creditsCost),
     error: gen.error,
     created_at: gen.createdAt,
     updated_at: gen.updatedAt,

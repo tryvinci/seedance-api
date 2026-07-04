@@ -13,6 +13,7 @@ import {
 import { pollProvider } from "@seedance/providers";
 import type { Env } from "../env";
 import { getDb, copyToR2, publicMediaUrl, deliverWebhook } from "../lib/utils";
+import { publicErrorMessage } from "../lib/public-error";
 
 export interface PollParams {
   generationId: string;
@@ -60,7 +61,7 @@ export class PollGenerationWorkflow extends WorkflowEntrypoint<
       }
       if (result.status === "failed") {
         failed = true;
-        errorMsg = result.error ?? "Generation failed";
+        errorMsg = publicErrorMessage(result.error ?? "Generation failed");
         break;
       }
 
@@ -71,7 +72,7 @@ export class PollGenerationWorkflow extends WorkflowEntrypoint<
       await step.do("refund", async () => {
         await updateGeneration(db, generationId, {
           status: "failed",
-          error: errorMsg ?? "Timeout or no output",
+          error: errorMsg ?? publicErrorMessage("timeout"),
         });
         await refundHold(db, ownerId, generationId, creditsCost);
       });

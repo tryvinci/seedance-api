@@ -1,0 +1,75 @@
+---
+title: Media upload
+description: Upload images and videos for use as generation inputs.
+---
+
+Many models accept media inputs (`image_url`, `video_url`, `reference_images`). Upload a file to get a URL, then pass that URL in your generation request.
+
+We host uploads for you and return a URL you can use immediately. You can also pass any publicly reachable HTTPS URL without uploading.
+
+## Upload a file
+
+```bash
+curl -X POST https://api.seedanceapi.us/v1/media/upload \
+  -H "Authorization: Bearer ak_YOUR_API_KEY" \
+  -F "file=@./reference.png"
+```
+
+### Response
+
+```json
+{
+  "url": "https://...",
+  "type": "image",
+  "filename": "reference.png",
+  "size": 102400
+}
+```
+
+Use `url` as `image_url` or `video_url` on video/image endpoints.
+
+## Use the URL in a generation
+
+```bash
+curl -X POST https://api.seedanceapi.us/v1/videos \
+  -H "Authorization: Bearer ak_YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "seedance-2.5/image-to-video",
+    "prompt": "Camera slowly pushes in",
+    "image_url": "https://...your-uploaded-url...",
+    "duration": 5
+  }'
+```
+
+## Supported formats
+
+| Type | Formats |
+| --- | --- |
+| Images | JPG, JPEG, PNG, WebP, GIF, BMP, TIFF |
+| Videos | MP4, MOV, WebM, MKV, AVI, and common variants |
+| Audio | MP3, WAV, OGG, AAC, FLAC, M4A |
+
+## Limits
+
+| Limit | Value |
+| --- | --- |
+| Max upload size | 100 MB |
+| Larger files | Pass a public HTTPS URL instead of uploading |
+
+## Tips
+
+- Upload first, then start generation with the returned `url`
+- Prefer public URLs for files over ~100 MB
+- Uploaded media is temporary storage for inputs — do not treat it as long-term hosting
+
+## Errors
+
+Upload and generation errors return clear messages. Common cases:
+
+| Status | Meaning |
+| --- | --- |
+| `400` | Missing or invalid `file` field |
+| `401` | Invalid API key |
+| `413` | File too large |
+| `502` | Upload temporarily unavailable — retry |

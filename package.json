@@ -2,13 +2,15 @@
   "name": "seedance-api",
   "private": true,
   "scripts": {
+    "dev": "pnpm db:migrate:local && pnpm --parallel --filter @seedance/api --filter @seedance/web run dev",
     "dev:api": "pnpm --filter @seedance/api dev",
     "dev:web": "pnpm --filter @seedance/web dev",
     "dev:docs": "pnpm --filter @seedance/docs dev",
+    "dev:all": "pnpm db:migrate:local && pnpm --parallel --filter @seedance/api --filter @seedance/web --filter @seedance/docs run dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "db:generate": "pnpm --filter @seedance/db generate",
-    "db:migrate:local": "pnpm --filter @seedance/api exec wrangler d1 migrations apply seedance-db --local",
+    "db:migrate:local": "pnpm --filter @seedance/api exec wrangler d1 migrations apply seedance-db --local && pnpm --filter @seedance/web exec wrangler d1 migrations apply seedance-db --local",
     "db:migrate:remote": "pnpm --filter @seedance/api exec wrangler d1 migrations apply seedance-db --remote"
   },
   "devDependencies": {

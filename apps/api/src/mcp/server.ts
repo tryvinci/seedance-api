@@ -145,7 +145,7 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
                 status: gen.status,
                 model: gen.canonicalModel,
                 output_url: gen.outputUrl,
-                credits_cost: gen.creditsCost,
+                price_usd: Math.round(gen.creditsCost) / 100,
                 error: gen.error,
               },
               null,
