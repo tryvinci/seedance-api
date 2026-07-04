@@ -163,8 +163,12 @@ export function PlaygroundClient() {
   const canGenerate =
     Boolean(prompt.trim()) && mediaReady && status !== "running" && !uploading;
 
-  async function authHeaders(): Promise<HeadersInit> {
-    const token = await getToken();
+  async function authHeaders(opts?: {
+    skipCache?: boolean;
+  }): Promise<HeadersInit> {
+    const token = await getToken(
+      opts?.skipCache ? { skipCache: true } : undefined,
+    );
     if (!token) throw new Error("Not signed in");
     return {
       Authorization: `Bearer ${token}`,
@@ -255,11 +259,19 @@ export function PlaygroundClient() {
     return { image: urls.length === 1 ? urls[0] : urls };
   }
 
-  async function pollGeneration(id: string, headers: HeadersInit) {
+  async function pollGeneration(id: string) {
     const apiBase = getApiBaseUrl();
     for (let i = 0; i < 120; i++) {
       await new Promise((r) => setTimeout(r, 2500));
-      const res = await fetch(`${apiBase}/v1/generations/${id}`, { headers });
+      // Refresh session token each poll — Clerk JWTs expire in ~60s, videos take longer.
+      const headers = await authHeaders({ skipCache: true });
+      let res = await fetch(`${apiBase}/v1/generations/${id}`, { headers });
+      if (res.status === 401) {
+        const retryHeaders = await authHeaders({ skipCache: true });
+        res = await fetch(`${apiBase}/v1/generations/${id}`, {
+          headers: retryHeaders,
+        });
+      }
       const data = await readApiJson(res);
       if (!res.ok) {
         throw new Error(String(data.message ?? data.error ?? "Poll failed"));
@@ -316,7 +328,7 @@ export function PlaygroundClient() {
         setCharged(
           typeof data.price_usd === "number" ? data.price_usd : estimate,
         );
-        await pollGeneration(String(data.id), headers);
+        await pollGeneration(String(data.id));
       } else {
         const res = await fetch(`${apiBase}/v1/images`, {
           method: "POST",
