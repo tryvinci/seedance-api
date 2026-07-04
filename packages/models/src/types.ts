@@ -54,7 +54,13 @@ export type ModelVariant = VideoVariant | ImageVariant;
 
 export interface ProviderMapping {
   modelark?: string;
+  /** Primary WaveSpeed model path. */
   wavespeed?: string;
+  /**
+   * Tried in order when the primary WaveSpeed path returns model-not-found.
+   * Prefer listing the live path as `wavespeed` and older/alternate ids here.
+   */
+  wavespeedFallbacks?: string[];
 }
 
 export interface ModelDefinition {

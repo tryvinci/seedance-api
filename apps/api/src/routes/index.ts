@@ -3,6 +3,7 @@ import {
   listModels,
   resolveModel,
   modelToPublic,
+  isModelRunnable,
   buildOpenApiSpec,
   videoParamsSchema,
   imageParamsSchema,
@@ -70,10 +71,22 @@ app.get("/health", (c) =>
 
 app.get("/openapi.json", (c) => c.json(buildOpenApiSpec()));
 
+function providerKeys(env: Env) {
+  return {
+    modelark: Boolean(env.MODELARK_API_KEY?.trim()),
+    wavespeed: Boolean(env.WAVESPEED_API_KEY?.trim()),
+  };
+}
+
 app.get("/v1/models", (c) => {
   const kind = c.req.query("kind") as "video" | "image" | undefined;
   const family = c.req.query("family");
-  const models = listModels({ kind, family });
+  // Only list models we can actually run with configured provider keys.
+  const models = listModels({
+    kind,
+    family,
+    providers: providerKeys(c.env),
+  });
   return c.json({ data: models.map(modelToPublic) });
 });
 
@@ -113,6 +126,15 @@ app.post("/v1/videos", authMiddleware, async (c) => {
   }
   if (model.kind !== "video") {
     return c.json({ error: "Model is not a video model" }, 400);
+  }
+  if (!isModelRunnable(model, providerKeys(c.env))) {
+    return c.json(
+      {
+        error: "Model unavailable",
+        message: "This model is not available right now. Pick another from GET /v1/models.",
+      },
+      503,
+    );
   }
 
   const parsed = videoParamsSchema.safeParse(body);
@@ -228,6 +250,15 @@ app.post("/v1/images", authMiddleware, async (c) => {
   }
   if (model.kind !== "image") {
     return c.json({ error: "Model is not an image model" }, 400);
+  }
+  if (!isModelRunnable(model, providerKeys(c.env))) {
+    return c.json(
+      {
+        error: "Model unavailable",
+        message: "This model is not available right now. Pick another from GET /v1/models.",
+      },
+      503,
+    );
   }
 
   const parsed = imageParamsSchema.safeParse(body);

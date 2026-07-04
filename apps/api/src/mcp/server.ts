@@ -62,6 +62,10 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
       const models = listModels({
         kind: kind as "video" | "image" | undefined,
         family,
+        providers: {
+          modelark: Boolean(env.MODELARK_API_KEY?.trim()),
+          wavespeed: Boolean(env.WAVESPEED_API_KEY?.trim()),
+        },
       });
       return {
         content: [

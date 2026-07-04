@@ -20,7 +20,7 @@ export class WaveSpeedClient {
   }
 
   async submitVideo(
-    modelPath: string,
+    modelPaths: string | string[],
     params: VideoParams,
   ): Promise<VideoSubmitResult> {
     const body: Record<string, unknown> = {
@@ -38,24 +38,12 @@ export class WaveSpeedClient {
     }
     if (params.seed !== undefined) body.seed = params.seed;
 
-    const res = await fetch(`${WAVESPEED_BASE}/${modelPath}`, {
-      method: "POST",
-      headers: this.headers(),
-      body: JSON.stringify(body),
+    return this.postWithPathFallback(modelPaths, body, (data) => {
+      const inner = (data.data ?? data) as { id?: string };
+      const taskId = inner.id ?? (data.id as string | undefined);
+      if (!taskId) throw new Error("WaveSpeed: no task id returned");
+      return { provider: "wavespeed" as const, taskId };
     });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`WaveSpeed video submit failed: ${res.status} ${text}`);
-    }
-
-    const data = (await res.json()) as {
-      data?: { id?: string };
-      id?: string;
-    };
-    const taskId = data.data?.id ?? data.id;
-    if (!taskId) throw new Error("WaveSpeed: no task id returned");
-    return { provider: "wavespeed", taskId };
   }
 
   async poll(taskId: string): Promise<PollResult> {
@@ -86,7 +74,7 @@ export class WaveSpeedClient {
   }
 
   async generateImage(
-    modelPath: string,
+    modelPaths: string | string[],
     params: ImageParams,
   ): Promise<ImageSubmitResult> {
     // WaveSpeed Seedream expects "2048*2048", not ModelArk-style "2K".
@@ -103,39 +91,94 @@ export class WaveSpeedClient {
       body.max_images = params.max_images;
     }
 
-    const res = await fetch(`${WAVESPEED_BASE}/${modelPath}`, {
-      method: "POST",
-      headers: this.headers(),
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`WaveSpeed image failed: ${res.status} ${text}`);
-    }
-
-    const data = (await res.json()) as {
-      data?: { id?: string; outputs?: string[]; status?: string };
-      id?: string;
-      outputs?: string[];
-    };
-
-    const inner = data.data ?? data;
-    if (inner.outputs?.length) {
-      return { provider: "wavespeed", outputUrls: inner.outputs };
-    }
-
-    const taskId = inner.id ?? data.id;
-    if (taskId) {
-      const polled = await this.pollUntilDone(taskId);
-      return {
-        provider: "wavespeed",
-        outputUrls: polled.outputUrl ? [polled.outputUrl] : [],
-        taskId,
+    return this.postWithPathFallback(modelPaths, body, async (data) => {
+      const inner = (data.data ?? data) as {
+        id?: string;
+        outputs?: string[];
       };
+      if (inner.outputs?.length) {
+        return { provider: "wavespeed" as const, outputUrls: inner.outputs };
+      }
+
+      const taskId = inner.id ?? (data.id as string | undefined);
+      if (taskId) {
+        const polled = await this.pollUntilDone(taskId);
+        return {
+          provider: "wavespeed" as const,
+          outputUrls: polled.outputUrl ? [polled.outputUrl] : [],
+          taskId,
+        };
+      }
+
+      throw new Error("WaveSpeed image: no output or task id");
+    });
+  }
+
+  /**
+   * Try primary path then fallbacks when upstream reports model-not-found.
+   */
+  private async postWithPathFallback<T>(
+    modelPaths: string | string[],
+    body: Record<string, unknown>,
+    parse: (data: Record<string, unknown>) => T | Promise<T>,
+  ): Promise<T> {
+    const paths = Array.isArray(modelPaths) ? modelPaths : [modelPaths];
+    if (paths.length === 0) {
+      throw new Error("No WaveSpeed model paths configured");
     }
 
-    throw new Error("WaveSpeed image: no output or task id");
+    let lastError: Error | undefined;
+    for (let i = 0; i < paths.length; i++) {
+      const modelPath = paths[i];
+      const res = await fetch(`${WAVESPEED_BASE}/${modelPath}`, {
+        method: "POST",
+        headers: this.headers(),
+        body: JSON.stringify(body),
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        const err = new Error(
+          `WaveSpeed request failed: ${res.status} ${text}`,
+        );
+        lastError = err;
+        const morePaths = i < paths.length - 1;
+        if (morePaths && isModelNotFoundError(res.status, text)) {
+          console.warn(
+            `WaveSpeed path missing (${modelPath}), trying fallback…`,
+          );
+          continue;
+        }
+        throw err;
+      }
+
+      let data: Record<string, unknown>;
+      try {
+        data = JSON.parse(text) as Record<string, unknown>;
+      } catch {
+        throw new Error(`WaveSpeed invalid JSON: ${text.slice(0, 200)}`);
+      }
+
+      // Some WaveSpeed errors return HTTP 200 with code != 200.
+      const code = data.code;
+      if (typeof code === "number" && code !== 200) {
+        const message = String(data.message ?? text);
+        const err = new Error(`WaveSpeed request failed: ${code} ${message}`);
+        lastError = err;
+        const morePaths = i < paths.length - 1;
+        if (morePaths && isModelNotFoundError(code, message)) {
+          console.warn(
+            `WaveSpeed path missing (${modelPath}), trying fallback…`,
+          );
+          continue;
+        }
+        throw err;
+      }
+
+      return parse(data);
+    }
+
+    throw lastError ?? new Error("WaveSpeed request failed");
   }
 
   private async pollUntilDone(
@@ -152,6 +195,17 @@ export class WaveSpeedClient {
     }
     return { status: "failed", error: "Polling timeout" };
   }
+}
+
+function isModelNotFoundError(status: number, body: string): boolean {
+  const msg = body.toLowerCase();
+  return (
+    status === 404 ||
+    msg.includes("model not found") ||
+    msg.includes("not found") ||
+    msg.includes("unknown model") ||
+    msg.includes("does not exist")
+  );
 }
 
 function mapWaveSpeedStatus(status: string): PollResult["status"] {

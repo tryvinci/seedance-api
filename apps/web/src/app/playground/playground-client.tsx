@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   listModels,
+  getModel,
   formatPrice,
   chargeUsd,
   formatUsd,
@@ -85,12 +86,44 @@ function mediaSlotForModel(model: ModelDefinition | undefined): MediaSlot | null
 
 export function PlaygroundClient() {
   const { getToken } = useAuth();
-  const models = useMemo(() => listModels(), []);
+  // Prefer API catalog (only runnable models); fall back to full static list.
+  const [models, setModels] = useState<ModelDefinition[]>(() => listModels());
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/v1/models`);
+        if (!res.ok) return;
+        const data = (await res.json()) as { data?: { id: string }[] };
+        const runnable = (data.data ?? [])
+          .map((m) => getModel(m.id))
+          .filter((m): m is ModelDefinition => Boolean(m));
+        if (!cancelled && runnable.length > 0) {
+          setModels(runnable);
+        }
+      } catch {
+        /* keep static catalog */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const [kind, setKind] = useState<Kind>("video");
   const filtered = models.filter((m) => m.kind === kind);
-  const [modelId, setModelId] = useState(
-    filtered.find((m) => m.id.includes("2.5"))?.id ?? filtered[0]?.id ?? "",
-  );
+  const [modelId, setModelId] = useState("");
+  useEffect(() => {
+    if (!filtered.some((m) => m.id === modelId)) {
+      setModelId(
+        filtered.find((m) => m.id.includes("2.5"))?.id ??
+          filtered.find((m) => m.id.includes("seedream-5"))?.id ??
+          filtered[0]?.id ??
+          "",
+      );
+    }
+  }, [kind, models, filtered, modelId]);
   const model = models.find((m) => m.id === modelId) ?? filtered[0];
   const mediaSlot = mediaSlotForModel(model);
 

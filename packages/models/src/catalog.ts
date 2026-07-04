@@ -363,8 +363,9 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     0.04,
     {
       modelark: "seedream-5-0-260128",
-      // WaveSpeed currently exposes 5.0 as the lite endpoint.
+      // WaveSpeed serves 5.0 via the lite endpoint today.
       wavespeed: "bytedance/seedream-v5.0-lite",
+      wavespeedFallbacks: ["bytedance/seedream-v5.0", "bytedance/seedream-v4.5"],
     },
     "Latest Seedream text-to-image with 2K/3K output.",
   ),
@@ -485,17 +486,49 @@ export function resolveModel(id: string): ModelDefinition {
   return model;
 }
 
+/** Ordered WaveSpeed paths: primary first, then fallbacks. */
+export function getWavespeedPaths(model: ModelDefinition): string[] {
+  const paths: string[] = [];
+  const add = (p?: string) => {
+    if (p && !paths.includes(p)) paths.push(p);
+  };
+  add(model.providers.wavespeed);
+  for (const p of model.providers.wavespeedFallbacks ?? []) add(p);
+  return paths;
+}
+
+/** True if at least one configured provider has credentials available. */
+export function isModelRunnable(
+  model: ModelDefinition,
+  keys: { modelark?: boolean; wavespeed?: boolean },
+): boolean {
+  if (!model.available) return false;
+  if (model.providers.modelark && keys.modelark) return true;
+  if (getWavespeedPaths(model).length > 0 && keys.wavespeed) return true;
+  return false;
+}
+
 export function listModels(filters?: {
   kind?: "video" | "image";
   family?: string;
+  /** When set, only models runnable with these provider keys are returned. */
+  providers?: { modelark?: boolean; wavespeed?: boolean };
 }): ModelDefinition[] {
   return MODEL_CATALOG.filter((m) => {
     if (filters?.kind && m.kind !== filters.kind) return false;
     if (filters?.family && m.family !== filters.family) return false;
+    if (filters?.providers && !isModelRunnable(m, filters.providers)) {
+      return false;
+    }
     return true;
   });
 }
 
-export function listFamilies(): string[] {
-  return [...new Set(MODEL_CATALOG.map((m) => m.family))];
+export function listFamilies(filters?: {
+  providers?: { modelark?: boolean; wavespeed?: boolean };
+}): string[] {
+  const models = listModels(
+    filters?.providers ? { providers: filters.providers } : undefined,
+  );
+  return [...new Set(models.map((m) => m.family))];
 }

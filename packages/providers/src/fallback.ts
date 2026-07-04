@@ -1,4 +1,4 @@
-import { resolveModel } from "@seedance/models";
+import { getWavespeedPaths, resolveModel } from "@seedance/models";
 import { ModelArkClient } from "./modelark";
 import { WaveSpeedClient } from "./wavespeed";
 import type {
@@ -23,7 +23,6 @@ export async function submitVideoWithFallback(
   const model = resolveModel(modelId);
   const modelark = new ModelArkClient(config);
   const wavespeed = new WaveSpeedClient(config);
-
   const errors: string[] = [];
 
   if (model.providers.modelark && config.modelarkApiKey?.trim()) {
@@ -39,12 +38,10 @@ export async function submitVideoWithFallback(
     }
   }
 
-  if (model.providers.wavespeed && config.wavespeedApiKey?.trim()) {
+  const wsPaths = getWavespeedPaths(model);
+  if (wsPaths.length > 0 && config.wavespeedApiKey?.trim()) {
     try {
-      const result = await wavespeed.submitVideo(
-        model.providers.wavespeed,
-        params,
-      );
+      const result = await wavespeed.submitVideo(wsPaths, params);
       return { result, provider: "wavespeed" };
     } catch (err) {
       console.error("WaveSpeed video failed:", err);
@@ -66,7 +63,6 @@ export async function generateImageWithFallback(
   const model = resolveModel(modelId);
   const modelark = new ModelArkClient(config);
   const wavespeed = new WaveSpeedClient(config);
-
   const errors: string[] = [];
 
   if (model.providers.modelark && config.modelarkApiKey?.trim()) {
@@ -82,12 +78,10 @@ export async function generateImageWithFallback(
     }
   }
 
-  if (model.providers.wavespeed && config.wavespeedApiKey?.trim()) {
+  const wsPaths = getWavespeedPaths(model);
+  if (wsPaths.length > 0 && config.wavespeedApiKey?.trim()) {
     try {
-      const result = await wavespeed.generateImage(
-        model.providers.wavespeed,
-        params,
-      );
+      const result = await wavespeed.generateImage(wsPaths, params);
       return { result, provider: "wavespeed" };
     } catch (err) {
       console.error("WaveSpeed image failed:", err);
