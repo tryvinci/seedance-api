@@ -440,7 +440,7 @@ export function PlaygroundClient() {
                       {mediaSlot.accept.startsWith("video")
                         ? ", MP4, MOV, WebM"
                         : ""}{" "}
-                      · max 100 MB
+                      · max 25 MB
                     </span>
                   </label>
                 )}

@@ -54,13 +54,13 @@ curl -X POST https://api.seedanceapi.us/v1/videos \
 
 | Limit | Value |
 | --- | --- |
-| Max upload size | 100 MB |
+| Max upload size | 25 MB (20 uploads / 100 MB per hour per account) |
 | Larger files | Pass a public HTTPS URL instead of uploading |
 
 ## Tips
 
 - Upload first, then start generation with the returned `url`
-- Prefer public URLs for files over ~100 MB
+- Prefer public URLs for files over ~25 MB
 - Uploaded media is temporary storage for inputs — do not treat it as long-term hosting
 
 ## Errors
