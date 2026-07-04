@@ -20,6 +20,7 @@ export async function handleMcp(request: Request, env: Env): Promise<Response> {
 
   const clerk = createClerkClient({
     secretKey: env.CLERK_SECRET_KEY,
+    publishableKey: env.CLERK_PUBLISHABLE_KEY,
     jwtKey: env.CLERK_JWT_KEY?.replace(/\\n/g, "\n"),
   });
   const parties = (env.AUTHORIZED_PARTIES ?? "")

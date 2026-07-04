@@ -21,11 +21,16 @@ function normalizeJwtKey(key: string | undefined): string | undefined {
 
 function clerkClient(env: Env) {
   const secretKey = env.CLERK_SECRET_KEY?.trim();
+  const publishableKey = env.CLERK_PUBLISHABLE_KEY?.trim();
   if (!secretKey) {
     throw new Error("CLERK_SECRET_KEY is not configured");
   }
+  if (!publishableKey) {
+    throw new Error("CLERK_PUBLISHABLE_KEY is not configured");
+  }
   return createClerkClient({
     secretKey,
+    publishableKey,
     jwtKey: normalizeJwtKey(env.CLERK_JWT_KEY),
   });
 }

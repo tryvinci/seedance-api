@@ -7,6 +7,7 @@ export interface Env {
   POLL_WORKFLOW: Workflow;
   CLERK_SECRET_KEY: string;
   CLERK_JWT_KEY: string;
+  CLERK_PUBLISHABLE_KEY: string;
   MODELARK_API_KEY: string;
   WAVESPEED_API_KEY: string;
   ARK_BASE: string;
