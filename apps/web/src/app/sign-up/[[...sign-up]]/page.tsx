@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { SignUp } from "@clerk/nextjs";
-import { getDashboardUrl } from "@/lib/app-url";
+import { Suspense } from "react";
+import { SignUpPanel } from "@/components/clerk-auth-panel";
 
 export const metadata: Metadata = {
   title: "Sign up",
@@ -8,17 +8,15 @@ export const metadata: Metadata = {
 };
 
 export default function SignUpPage() {
-  const dashboardUrl = getDashboardUrl();
-
   return (
-    <div className="flex min-h-[70vh] items-center justify-center px-6 py-16">
-      <SignUp
-        routing="path"
-        path="/sign-up"
-        signInUrl="/sign-in"
-        fallbackRedirectUrl={dashboardUrl}
-        signInFallbackRedirectUrl={dashboardUrl}
-      />
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex min-h-[70vh] items-center justify-center text-sm text-ink-soft">
+          Loading…
+        </div>
+      }
+    >
+      <SignUpPanel />
+    </Suspense>
   );
 }

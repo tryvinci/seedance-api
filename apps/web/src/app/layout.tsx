@@ -6,6 +6,7 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { JsonLd } from "@/components/json-ld";
 import { getAppUrl, getDashboardUrl } from "@/lib/app-url";
+import { getClerkPublishableKey } from "@/lib/clerk-key";
 import "./globals.css";
 
 const geistSans = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
@@ -130,26 +131,47 @@ export default function RootLayout({
 }) {
   const appUrl = getAppUrl();
   const dashboardUrl = getDashboardUrl();
+  const publishableKey = getClerkPublishableKey();
+
+  const body = (
+    <body className="min-h-screen bg-paper font-sans antialiased text-ink">
+      <JsonLd data={jsonLd} />
+      <Header />
+      <main>
+        {!publishableKey ? (
+          <div className="mx-auto max-w-lg px-6 py-20 text-center text-sm text-red-700">
+            Clerk is not configured (missing publishable key). Set{" "}
+            <code className="font-mono">NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code>{" "}
+            as a build variable and runtime variable on the web worker.
+          </div>
+        ) : (
+          children
+        )}
+      </main>
+      <Footer />
+    </body>
+  );
 
   return (
-    <ClerkProvider
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      signInFallbackRedirectUrl={dashboardUrl}
-      signUpFallbackRedirectUrl={dashboardUrl}
-      afterSignOutUrl={appUrl}
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
     >
-      <html
-        lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
-      >
-        <body className="min-h-screen bg-paper font-sans antialiased text-ink">
-          <JsonLd data={jsonLd} />
-          <Header />
-          <main>{children}</main>
-          <Footer />
-        </body>
-      </html>
-    </ClerkProvider>
+      {publishableKey ? (
+        <ClerkProvider
+          publishableKey={publishableKey}
+          signInUrl="/sign-in"
+          signUpUrl="/sign-up"
+          signInFallbackRedirectUrl={dashboardUrl}
+          signUpFallbackRedirectUrl={dashboardUrl}
+          afterSignOutUrl={appUrl}
+        >
+          {body}
+        </ClerkProvider>
+      ) : (
+        body
+      )}
+    </html>
   );
 }
+

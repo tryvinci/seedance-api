@@ -10,7 +10,8 @@ export const metadata: Metadata = {
 
 export default async function DashboardPage() {
   const { userId } = await auth();
-  if (!userId) redirect("/");
+  if (!userId) redirect("/sign-in?redirect_url=/dashboard");
 
   return <DashboardClient />;
 }
+

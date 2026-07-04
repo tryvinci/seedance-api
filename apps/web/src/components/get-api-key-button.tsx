@@ -16,16 +16,34 @@ export function GetApiKeyButton({
   label?: string;
 }) {
   const { isLoaded, isSignedIn } = useAuth();
-  const signedIn = isLoaded && isSignedIn;
-  const text = label ?? (signedIn ? "Dashboard" : "Get API key");
   const dashboardUrl = getDashboardUrl();
-  const href = signedIn
-    ? "/dashboard"
-    : `/sign-in?redirect_url=${encodeURIComponent(dashboardUrl)}`;
+
+  // While Clerk loads, still show a working link (sign-in auto-forwards if session exists).
+  if (!isLoaded) {
+    return (
+      <Link
+        href={`/sign-in?redirect_url=${encodeURIComponent(dashboardUrl)}`}
+        className={className}
+      >
+        {label ?? "Get API key"}
+      </Link>
+    );
+  }
+
+  if (isSignedIn) {
+    return (
+      <Link href="/dashboard" className={className}>
+        {label ?? "Dashboard"}
+      </Link>
+    );
+  }
 
   return (
-    <Link href={href} className={className}>
-      {text}
+    <Link
+      href={`/sign-in?redirect_url=${encodeURIComponent(dashboardUrl)}`}
+      className={className}
+    >
+      {label ?? "Get API key"}
     </Link>
   );
 }
