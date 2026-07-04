@@ -29,6 +29,7 @@ import {
   getDb,
   checkIdempotency,
   setIdempotency,
+  checkUploadQuota,
   copyToR2,
   publicMediaUrl,
 } from "../lib/utils";
@@ -302,6 +303,7 @@ app.post("/v1/images", authMiddleware, async (c) => {
  * Proxies to the upstream media host; response has no provider branding.
  */
 app.post("/v1/media/upload", authMiddleware, async (c) => {
+  const { ownerId } = c.get("auth") as AuthContext;
   const contentType = c.req.header("content-type") ?? "";
   if (!contentType.includes("multipart/form-data")) {
     return c.json(
@@ -324,12 +326,9 @@ app.post("/v1/media/upload", authMiddleware, async (c) => {
 
   const blob = entry as Blob & { name?: string };
   const filename = blob.name || "upload";
-  const maxBytes = 100 * 1024 * 1024;
-  if (blob.size > maxBytes) {
-    return c.json(
-      { error: "File too large. Max 100MB; use a public URL for larger files." },
-      413,
-    );
+  const quota = await checkUploadQuota(c.env.CACHE, ownerId, blob.size);
+  if (!quota.ok) {
+    return c.json({ error: quota.error }, quota.status);
   }
 
   try {

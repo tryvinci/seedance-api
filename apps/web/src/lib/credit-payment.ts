@@ -94,7 +94,13 @@ export async function creditSucceededPayment(
   }
 
   const metadata = payment.metadata ?? {};
-  if (metadata.clerk_user_id && metadata.clerk_user_id !== ownerId) {
+  const paymentOwner = metadata.clerk_user_id?.trim();
+  // Never credit the caller when ownership metadata is missing — that enables
+  // balance theft via a leaked payment_id.
+  if (!paymentOwner) {
+    throw new Error("Payment missing owner metadata");
+  }
+  if (paymentOwner !== ownerId) {
     throw new Error("Payment belongs to a different user");
   }
 
@@ -105,6 +111,7 @@ export async function creditSucceededPayment(
   }
 
   const id = paymentIdOf(payment, paymentId);
-  await addCredits(db, ownerId, credits, "purchase", id);
+  // Always credit the payment owner from metadata (matches ownerId after checks).
+  await addCredits(db, paymentOwner, credits, "purchase", id);
   return { credited: true, credits };
 }

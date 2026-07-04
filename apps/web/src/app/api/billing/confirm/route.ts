@@ -41,7 +41,7 @@ export async function POST(req: Request) {
 
   try {
     const db = await getDb();
-    // If metadata lacks clerk_user_id, credit the authenticated user.
+    // Requires payment.metadata.clerk_user_id === session user (no fallback).
     const result = await creditSucceededPayment(db, userId, payment, paymentId);
     const balance = await getWalletBalance(db, userId);
     return NextResponse.json({
@@ -53,7 +53,10 @@ export async function POST(req: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Credit failed";
     console.error("Payment confirm failed:", err);
-    if (message.includes("different user")) {
+    if (
+      message.includes("different user") ||
+      message.includes("missing owner")
+    ) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
     return NextResponse.json({ error: message }, { status: 400 });

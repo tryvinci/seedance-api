@@ -25,6 +25,59 @@ export async function setIdempotency(
   });
 }
 
+const UPLOAD_MAX_FILE_BYTES = 25 * 1024 * 1024;
+const UPLOAD_MAX_PER_HOUR = 20;
+const UPLOAD_MAX_BYTES_PER_HOUR = 100 * 1024 * 1024;
+
+/** Per-user media upload quota (shared upstream credential protection). */
+export async function checkUploadQuota(
+  cache: Env["CACHE"],
+  ownerId: string,
+  fileBytes: number,
+): Promise<{ ok: true } | { ok: false; error: string; status: 413 | 429 }> {
+  if (fileBytes > UPLOAD_MAX_FILE_BYTES) {
+    return {
+      ok: false,
+      status: 413,
+      error: "File too large. Max 25MB; use a public URL for larger files.",
+    };
+  }
+
+  const hour = Math.floor(Date.now() / 3_600_000);
+  const countKey = `upload:count:${ownerId}:${hour}`;
+  const bytesKey = `upload:bytes:${ownerId}:${hour}`;
+
+  const [countRaw, bytesRaw] = await Promise.all([
+    cache.get(countKey),
+    cache.get(bytesKey),
+  ]);
+  const count = Number(countRaw ?? 0);
+  const bytes = Number(bytesRaw ?? 0);
+
+  if (count >= UPLOAD_MAX_PER_HOUR) {
+    return {
+      ok: false,
+      status: 429,
+      error: "Upload rate limit exceeded. Try again later.",
+    };
+  }
+  if (bytes + fileBytes > UPLOAD_MAX_BYTES_PER_HOUR) {
+    return {
+      ok: false,
+      status: 429,
+      error: "Hourly upload quota exceeded. Try again later.",
+    };
+  }
+
+  const ttl = 3600 + 60;
+  await Promise.all([
+    cache.put(countKey, String(count + 1), { expirationTtl: ttl }),
+    cache.put(bytesKey, String(bytes + fileBytes), { expirationTtl: ttl }),
+  ]);
+
+  return { ok: true };
+}
+
 export async function copyToR2(
   bucket: Env["MEDIA"],
   sourceUrl: string,
