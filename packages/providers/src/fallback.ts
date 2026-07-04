@@ -24,7 +24,9 @@ export async function submitVideoWithFallback(
   const modelark = new ModelArkClient(config);
   const wavespeed = new WaveSpeedClient(config);
 
-  if (model.providers.modelark) {
+  const errors: string[] = [];
+
+  if (model.providers.modelark && config.modelarkApiKey?.trim()) {
     try {
       const result = await modelark.submitVideo(
         model.providers.modelark,
@@ -33,18 +35,27 @@ export async function submitVideoWithFallback(
       return { result, provider: "modelark" };
     } catch (err) {
       console.error("ModelArk video fallback:", err);
+      errors.push(err instanceof Error ? err.message : String(err));
     }
   }
 
-  if (model.providers.wavespeed) {
-    const result = await wavespeed.submitVideo(
-      model.providers.wavespeed,
-      params,
-    );
-    return { result, provider: "wavespeed" };
+  if (model.providers.wavespeed && config.wavespeedApiKey?.trim()) {
+    try {
+      const result = await wavespeed.submitVideo(
+        model.providers.wavespeed,
+        params,
+      );
+      return { result, provider: "wavespeed" };
+    } catch (err) {
+      console.error("WaveSpeed video failed:", err);
+      errors.push(err instanceof Error ? err.message : String(err));
+    }
   }
 
-  throw new Error(`No provider available for model: ${modelId}`);
+  throw new Error(
+    errors[errors.length - 1] ??
+      `No provider available for model: ${modelId}`,
+  );
 }
 
 export async function generateImageWithFallback(
@@ -56,7 +67,9 @@ export async function generateImageWithFallback(
   const modelark = new ModelArkClient(config);
   const wavespeed = new WaveSpeedClient(config);
 
-  if (model.providers.modelark) {
+  const errors: string[] = [];
+
+  if (model.providers.modelark && config.modelarkApiKey?.trim()) {
     try {
       const result = await modelark.generateImage(
         model.providers.modelark,
@@ -65,18 +78,27 @@ export async function generateImageWithFallback(
       return { result, provider: "modelark" };
     } catch (err) {
       console.error("ModelArk image fallback:", err);
+      errors.push(err instanceof Error ? err.message : String(err));
     }
   }
 
-  if (model.providers.wavespeed) {
-    const result = await wavespeed.generateImage(
-      model.providers.wavespeed,
-      params,
-    );
-    return { result, provider: "wavespeed" };
+  if (model.providers.wavespeed && config.wavespeedApiKey?.trim()) {
+    try {
+      const result = await wavespeed.generateImage(
+        model.providers.wavespeed,
+        params,
+      );
+      return { result, provider: "wavespeed" };
+    } catch (err) {
+      console.error("WaveSpeed image failed:", err);
+      errors.push(err instanceof Error ? err.message : String(err));
+    }
   }
 
-  throw new Error(`No provider available for model: ${modelId}`);
+  throw new Error(
+    errors[errors.length - 1] ??
+      `No provider available for model: ${modelId}`,
+  );
 }
 
 export async function pollProvider(

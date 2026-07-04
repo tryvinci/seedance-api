@@ -363,7 +363,8 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     0.04,
     {
       modelark: "seedream-5-0-260128",
-      wavespeed: "bytedance/seedream-v5.0",
+      // WaveSpeed currently exposes 5.0 as the lite endpoint.
+      wavespeed: "bytedance/seedream-v5.0-lite",
     },
     "Latest Seedream text-to-image with 2K/3K output.",
   ),

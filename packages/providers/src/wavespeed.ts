@@ -89,12 +89,18 @@ export class WaveSpeedClient {
     modelPath: string,
     params: ImageParams,
   ): Promise<ImageSubmitResult> {
+    // WaveSpeed Seedream expects "2048*2048", not ModelArk-style "2K".
     const body: Record<string, unknown> = {
       prompt: params.prompt,
-      size: params.size ?? "2K",
+      size: wavespeedImageSize(params.size),
+      output_format: params.output_format ?? "jpeg",
+      enable_sync_mode: false,
     };
     if (params.image) {
       body.images = Array.isArray(params.image) ? params.image : [params.image];
+    }
+    if (params.max_images != null) {
+      body.max_images = params.max_images;
     }
 
     const res = await fetch(`${WAVESPEED_BASE}/${modelPath}`, {
@@ -160,5 +166,20 @@ function mapWaveSpeedStatus(status: string): PollResult["status"] {
       return "processing";
     default:
       return "pending";
+  }
+}
+
+/** Map public size presets to WaveSpeed pixel dimensions. */
+function wavespeedImageSize(size?: string): string {
+  switch (size) {
+    case "1K":
+      return "1440*1440";
+    case "3K":
+      return "3072*3072";
+    case "4K":
+      return "4096*4096";
+    case "2K":
+    default:
+      return "2048*2048";
   }
 }
