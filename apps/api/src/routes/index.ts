@@ -49,7 +49,19 @@ app.use("*", async (c, next) => {
   c.header("Access-Control-Max-Age", "86400");
   // Must use c.body so CORS headers set above are included (bare Response drops them).
   if (c.req.method === "OPTIONS") return c.body(null, 204);
-  await next();
+  try {
+    await next();
+  } catch (err) {
+    console.error("Unhandled API error:", err);
+    return c.json(
+      {
+        error: "Internal error",
+        message:
+          err instanceof Error ? err.message : "Something went wrong",
+      },
+      500,
+    );
+  }
 });
 
 app.get("/health", (c) =>

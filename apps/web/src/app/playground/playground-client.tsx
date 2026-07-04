@@ -139,6 +139,18 @@ export function PlaygroundClient() {
     };
   }
 
+  async function readApiJson(res: Response): Promise<Record<string, unknown>> {
+    const text = await res.text();
+    if (!text) return {};
+    try {
+      return JSON.parse(text) as Record<string, unknown>;
+    } catch {
+      throw new Error(
+        text.slice(0, 200) || `Request failed (${res.status})`,
+      );
+    }
+  }
+
   async function uploadFiles(files: FileList | File[]) {
     if (!mediaSlot) return;
     const list = Array.from(files);
@@ -166,9 +178,11 @@ export function PlaygroundClient() {
           headers: { Authorization: `Bearer ${token}` },
           body: form,
         });
-        const data = await res.json();
+        const data = await readApiJson(res);
         if (!res.ok) {
-          throw new Error(data.message ?? data.error ?? "Upload failed");
+          throw new Error(
+            String(data.message ?? data.error ?? "Upload failed"),
+          );
         }
         next.push({
           url: data.url as string,
@@ -213,18 +227,22 @@ export function PlaygroundClient() {
     for (let i = 0; i < 120; i++) {
       await new Promise((r) => setTimeout(r, 2500));
       const res = await fetch(`${apiBase}/v1/generations/${id}`, { headers });
-      const data = await res.json();
+      const data = await readApiJson(res);
       if (!res.ok) {
-        throw new Error(data.message ?? data.error ?? "Poll failed");
+        throw new Error(String(data.message ?? data.error ?? "Poll failed"));
       }
       if (data.status === "completed" && data.output_url) {
-        setResultUrl(data.output_url);
-        setCharged(data.price_usd ?? estimate);
+        setResultUrl(String(data.output_url));
+        setCharged(
+          typeof data.price_usd === "number" ? data.price_usd : estimate,
+        );
         setStatus("completed");
         return;
       }
       if (data.status === "failed") {
-        throw new Error(data.error ?? data.message ?? "Generation failed");
+        throw new Error(
+          String(data.error ?? data.message ?? "Generation failed"),
+        );
       }
     }
     throw new Error("Generation timed out. Please try again.");
@@ -255,13 +273,17 @@ export function PlaygroundClient() {
             ...media,
           }),
         });
-        const data = await res.json();
+        const data = await readApiJson(res);
         if (!res.ok) {
-          throw new Error(data.message ?? data.error ?? "Request failed");
+          throw new Error(
+            String(data.message ?? data.error ?? "Request failed"),
+          );
         }
-        setGenerationId(data.id);
-        setCharged(data.price_usd ?? estimate);
-        await pollGeneration(data.id, headers);
+        setGenerationId(String(data.id));
+        setCharged(
+          typeof data.price_usd === "number" ? data.price_usd : estimate,
+        );
+        await pollGeneration(String(data.id), headers);
       } else {
         const res = await fetch(`${apiBase}/v1/images`, {
           method: "POST",
@@ -272,13 +294,20 @@ export function PlaygroundClient() {
             ...media,
           }),
         });
-        const data = await res.json();
+        const data = await readApiJson(res);
         if (!res.ok) {
-          throw new Error(data.message ?? data.error ?? "Request failed");
+          throw new Error(
+            String(data.message ?? data.error ?? "Request failed"),
+          );
         }
-        setGenerationId(data.id);
-        setResultUrl(data.output_urls?.[0] ?? null);
-        setCharged(data.price_usd ?? estimate);
+        setGenerationId(String(data.id));
+        const urls = data.output_urls;
+        setResultUrl(
+          Array.isArray(urls) && typeof urls[0] === "string" ? urls[0] : null,
+        );
+        setCharged(
+          typeof data.price_usd === "number" ? data.price_usd : estimate,
+        );
         setStatus("completed");
       }
     } catch (err) {
