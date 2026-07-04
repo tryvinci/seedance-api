@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { listModels, listFamilies } from "@seedance/models";
 import { getDocsUrl } from "@/lib/docs-url";
-import { GetApiKeyButton } from "@/components/get-api-key-button";
+import { GetApiKeyButton } from "@/components/header-auth";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },

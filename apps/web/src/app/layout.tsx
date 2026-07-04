@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
-import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Instrument_Serif } from "next/font/google";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { JsonLd } from "@/components/json-ld";
-import { getAppUrl, getDashboardUrl } from "@/lib/app-url";
+import { Providers } from "@/components/providers";
 import { getClerkPublishableKey } from "@/lib/clerk-key";
 import "./globals.css";
 
@@ -129,49 +128,21 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const appUrl = getAppUrl();
-  const dashboardUrl = getDashboardUrl();
   const publishableKey = getClerkPublishableKey();
-
-  const body = (
-    <body className="min-h-screen bg-paper font-sans antialiased text-ink">
-      <JsonLd data={jsonLd} />
-      <Header />
-      <main>
-        {!publishableKey ? (
-          <div className="mx-auto max-w-lg px-6 py-20 text-center text-sm text-red-700">
-            Clerk is not configured (missing publishable key). Set{" "}
-            <code className="font-mono">NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code>{" "}
-            as a build variable and runtime variable on the web worker.
-          </div>
-        ) : (
-          children
-        )}
-      </main>
-      <Footer />
-    </body>
-  );
 
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable}`}
     >
-      {publishableKey ? (
-        <ClerkProvider
-          publishableKey={publishableKey}
-          signInUrl="/sign-in"
-          signUpUrl="/sign-up"
-          signInFallbackRedirectUrl={dashboardUrl}
-          signUpFallbackRedirectUrl={dashboardUrl}
-          afterSignOutUrl={appUrl}
-        >
-          {body}
-        </ClerkProvider>
-      ) : (
-        body
-      )}
+      <body className="min-h-screen bg-paper font-sans antialiased text-ink">
+        <Providers publishableKey={publishableKey}>
+          <JsonLd data={jsonLd} />
+          <Header />
+          <main>{children}</main>
+          <Footer />
+        </Providers>
+      </body>
     </html>
   );
 }
-
