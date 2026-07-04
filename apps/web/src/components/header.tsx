@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
+import { SignedIn, UserButton } from "@clerk/nextjs";
 import { getDocsUrl } from "@/lib/docs-url";
 import { getAppUrl } from "@/lib/app-url";
 import { Logo } from "@/components/logo";
@@ -45,23 +45,15 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <SignedOut>
-            <a
-              href={getDocsUrl()}
-              className="hidden rounded-full px-4 py-2 text-sm text-ink-soft transition hover:bg-paper-2 hover:text-ink sm:inline-block"
-            >
-              Docs
-            </a>
-            <GetApiKeyButton className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:bg-ink-2" />
-          </SignedOut>
+          <a
+            href={getDocsUrl()}
+            className="hidden rounded-full px-4 py-2 text-sm text-ink-soft transition hover:bg-paper-2 hover:text-ink sm:inline-block"
+          >
+            Docs
+          </a>
+          <GetApiKeyButton className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:bg-ink-2" />
           <SignedIn>
             <NavBalance />
-            <Link
-              href="/dashboard"
-              className="rounded-full bg-ink px-4 py-2 text-sm font-medium text-paper transition hover:bg-ink-2"
-            >
-              Dashboard
-            </Link>
             <UserButton
               afterSignOutUrl={appUrl}
               userProfileProps={{

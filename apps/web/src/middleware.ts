@@ -1,4 +1,5 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const isProtectedRoute = createRouteMatcher([
   "/dashboard(.*)",
@@ -8,9 +9,22 @@ const isProtectedRoute = createRouteMatcher([
   "/api/webhooks/configure",
 ]);
 
+const isPublicAuthRoute = createRouteMatcher([
+  "/sign-in(.*)",
+  "/sign-up(.*)",
+]);
+
 export default clerkMiddleware(async (auth, req) => {
+  if (isPublicAuthRoute(req)) return;
+
   if (isProtectedRoute(req)) {
-    await auth.protect();
+    const { userId } = await auth();
+    if (!userId) {
+      // Hosted sign-in on this domain (not Vinci's Clerk account defaults).
+      const signIn = new URL("/sign-in", req.url);
+      signIn.searchParams.set("redirect_url", req.url);
+      return NextResponse.redirect(signIn);
+    }
   }
 });
 
