@@ -67,6 +67,24 @@ body {
   @apply bg-transparent p-0 text-inherit;
 }
 
+/* Clerk auth cards — sit on paper background without default purple chrome */
+.cl-rootBox {
+  width: 100%;
+}
+
+.cl-card {
+  box-shadow: none !important;
+}
+
+.cl-footer {
+  background: transparent !important;
+}
+
+.cl-internal-b3fm6y,
+.cl-footerAction {
+  background: transparent !important;
+}
+
 /* Clerk APIKeys — readable inputs and expiration dropdown */
 .cl-apiKeys,
 .cl-apiKeys * {

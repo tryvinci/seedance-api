@@ -2,6 +2,7 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { getAppUrl, getDashboardUrl } from "@/lib/app-url";
+import { clerkAppearance } from "@/lib/clerk-appearance";
 
 export function Providers({
   children,
@@ -23,6 +24,7 @@ export function Providers({
   return (
     <ClerkProvider
       publishableKey={key}
+      appearance={clerkAppearance}
       signInUrl="/sign-in"
       signUpUrl="/sign-up"
       signInFallbackRedirectUrl={dashboardUrl}
