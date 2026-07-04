@@ -13,15 +13,25 @@ function signInHref() {
   return `/sign-in?redirect_url=${encodeURIComponent(dashboardUrl)}`;
 }
 
+function GuestCtaLink({
+  className,
+  label = "Get Started",
+}: {
+  className?: string;
+  label?: string;
+}) {
+  return (
+    <Link href={signInHref()} className={className}>
+      {label}
+    </Link>
+  );
+}
+
 /** Auth controls — only uses Clerk hooks when a publishable key is present. */
 export function HeaderAuth() {
   const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   if (!key) {
-    return (
-      <Link href={signInHref()} className={btnClass}>
-        Get API key
-      </Link>
-    );
+    return <GuestCtaLink className={btnClass} />;
   }
   return <HeaderAuthInner />;
 }
@@ -29,14 +39,9 @@ export function HeaderAuth() {
 function HeaderAuthInner() {
   const { isLoaded, isSignedIn } = useAuth();
   const appUrl = getAppUrl();
-  const href = signInHref();
 
   if (!isLoaded || !isSignedIn) {
-    return (
-      <Link href={href} className={btnClass}>
-        Get API key
-      </Link>
-    );
+    return <GuestCtaLink className={btnClass} />;
   }
 
   return (
@@ -65,11 +70,7 @@ export function GetApiKeyButton({
 }) {
   const key = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
   if (!key) {
-    return (
-      <Link href={signInHref()} className={className}>
-        {label ?? "Get API key"}
-      </Link>
-    );
+    return <GuestCtaLink className={className} label={label} />;
   }
   return <GetApiKeyButtonInner className={className} label={label} />;
 }
@@ -91,9 +92,5 @@ function GetApiKeyButtonInner({
     );
   }
 
-  return (
-    <Link href={signInHref()} className={className}>
-      {label ?? "Get API key"}
-    </Link>
-  );
+  return <GuestCtaLink className={className} label={label} />;
 }
