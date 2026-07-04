@@ -45,7 +45,9 @@ app.use("*", async (c, next) => {
     "Access-Control-Allow-Headers",
     "Content-Type, Authorization, Idempotency-Key",
   );
-  if (c.req.method === "OPTIONS") return new Response(null, { status: 204 });
+  c.header("Access-Control-Max-Age", "86400");
+  // Must use c.body so CORS headers set above are included (bare Response drops them).
+  if (c.req.method === "OPTIONS") return c.body(null, 204);
   await next();
 });
 

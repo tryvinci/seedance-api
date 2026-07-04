@@ -1,4 +1,4 @@
-import { eq, desc, and, sql } from "drizzle-orm";
+import { eq, desc, and, sql, inArray } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import {
   wallets,
@@ -48,7 +48,7 @@ export async function sumLedgerBalance(db: Db, ownerId: string): Promise<number>
     .where(
       and(
         eq(creditLedger.ownerId, ownerId),
-        sql`${creditLedger.status} IN ('committed', 'pending')`,
+        inArray(creditLedger.status, ["committed", "pending"]),
       ),
     )
     .get();

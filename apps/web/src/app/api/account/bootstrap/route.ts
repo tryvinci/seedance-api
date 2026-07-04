@@ -13,23 +13,37 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  let balanceUsd = 0;
+  let balanceCredits = 0;
   try {
     const db = await getDb();
-    const balance = await getWalletBalance(db, userId);
-    const key = await ensureDefaultApiKey(userId);
-
-    return NextResponse.json({
-      balance_usd: creditsToUsd(balance),
-      balance_credits: balance,
-      default_api_key: key.secret,
-      default_api_key_name: key.name,
-      default_api_key_created: key.created,
-    });
+    balanceCredits = await getWalletBalance(db, userId);
+    balanceUsd = creditsToUsd(balanceCredits);
   } catch (err) {
-    console.error("Account bootstrap failed:", err);
+    console.error("Account bootstrap balance failed:", err);
     return NextResponse.json(
-      { error: "Failed to provision account" },
+      { error: "Failed to load balance" },
       { status: 500 },
     );
   }
+
+  // API key provisioning must not fail the whole bootstrap (Clerk API Keys EA).
+  let key: {
+    secret: string | null;
+    name: string | null;
+    created: boolean;
+  } = { secret: null, name: null, created: false };
+  try {
+    key = await ensureDefaultApiKey(userId);
+  } catch (err) {
+    console.error("Account bootstrap API key failed:", err);
+  }
+
+  return NextResponse.json({
+    balance_usd: balanceUsd,
+    balance_credits: balanceCredits,
+    default_api_key: key.secret,
+    default_api_key_name: key.name,
+    default_api_key_created: key.created,
+  });
 }
