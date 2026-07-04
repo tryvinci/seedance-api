@@ -42,7 +42,7 @@ If MCP is configured, prefer these tools:
 ## Error handling
 
 - 402: Insufficient credits — tell user to buy more at /pricing
-- 502: Provider error — retry once, then report failure
+- 502: Upstream error — retry once, then report failure
 - Use `Idempotency-Key` header on video requests to prevent double charges
 
 ## Model selection guide

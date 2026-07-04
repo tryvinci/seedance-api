@@ -41,7 +41,7 @@ Base URL: `https://api.seedanceapi.us`
 
 ## Key models
 
-- `seedance-2.5/text-to-video` — latest (served via 2.0)
+- `seedance-2.5/text-to-video` — latest cinematic T2V
 - `seedance-2.0/text-to-video` — cinematic T2V
 - `seedance-2.0-fast/text-to-video` — fast T2V
 - `seedream-5.0/text-to-image` — latest image model

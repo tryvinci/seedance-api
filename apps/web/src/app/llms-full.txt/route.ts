@@ -31,7 +31,6 @@ ${models
 - Variant: ${pub.variant}
 - Credits: ${pub.credits}
 - Family: ${pub.family}
-${pub.alias_of ? `- Alias of: ${pub.alias_of}` : ""}
 - ${pub.description}`;
   })
   .join("\n\n")}

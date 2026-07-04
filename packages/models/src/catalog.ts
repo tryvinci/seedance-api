@@ -53,7 +53,7 @@ function image(
 }
 
 export const MODEL_CATALOG: ModelDefinition[] = [
-  // Seedance 2.5 (alias to 2.0 until available)
+  // Seedance 2.5
   video(
     "seedance-2.5/text-to-video",
     "Seedance 2.5 Text-to-Video",
@@ -64,8 +64,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/text-to-video",
     },
-    "Next-gen cinematic text-to-video. Currently served by Seedance 2.0.",
-    { aliasOf: "seedance-2.0/text-to-video" },
+    "Next-gen cinematic text-to-video.",
   ),
   video(
     "seedance-2.5/image-to-video",
@@ -77,8 +76,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/image-to-video",
     },
-    "Next-gen image-to-video. Currently served by Seedance 2.0.",
-    { aliasOf: "seedance-2.0/image-to-video" },
+    "Next-gen image-to-video.",
   ),
   video(
     "seedance-2.5/reference-to-video",
@@ -89,8 +87,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     {
       wavespeed: "bytedance/seedance-2.0/text-to-video",
     },
-    "Multimodal reference-to-video. Currently served by Seedance 2.0.",
-    { aliasOf: "seedance-2.0/reference-to-video" },
+    "Multimodal reference-to-video.",
   ),
 
   // Seedance 2.0 Standard

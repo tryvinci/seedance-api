@@ -11,7 +11,7 @@ apps/
 docs/      — Docs at seedanceapi.us/docs
 packages/
   models/     — Model catalog, pricing, OpenAPI spec
-  providers/  — ModelArk + WaveSpeed clients with fallback
+  providers/  — Upstream generation clients
   db/         — Drizzle D1 schema and queries
 ```
 
@@ -28,9 +28,8 @@ See [DEPLOY.md](./DEPLOY.md) for production deployment.
 
 ## Features
 
-- **Models**: SeedDance 2.5 (alias→2.0), 2.0, 2.0 Fast, 2.0 Mini, 1.5 Pro, 1.0 Pro + Seedream 5.0, 4.5, 4.0
+- **Models**: SeedDance 2.5, 2.0, 2.0 Fast, 2.0 Mini, 1.5 Pro, 1.0 Pro + Seedream 5.0, 4.5, 4.0
 - **Auth**: Clerk API keys
 - **Billing**: Prepaid credits via Dodo Payments
-- **Providers**: ModelArk primary, WaveSpeed fallback
 - **MCP**: Streamable HTTP MCP server at `/mcp`
 - **SEO**: sitemap, robots.txt, llms.txt, llms-full.txt, OpenAPI, JSON-LD

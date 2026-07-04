@@ -22,7 +22,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-black/20" aria-hidden />
           <div className="relative mx-auto max-w-4xl px-6 pb-20 pt-24 text-center sm:pt-28">
             <p className="mb-6 inline-block rounded-full border border-white/20 bg-white/10 px-4 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-white/85">
-              SeedDance 2.5 — served via 2.0 until native release
+              SeedDance 2.5 &amp; Seedream
             </p>
             <h1 className="font-display text-[clamp(2.5rem,7vw,4.5rem)] leading-[1.05] tracking-tight text-white">
               The API for{" "}

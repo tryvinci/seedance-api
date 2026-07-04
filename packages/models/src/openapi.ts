@@ -127,7 +127,6 @@ export function buildOpenApiSpec() {
             variant: { type: "string" },
             credits: { type: "integer" },
             description: { type: "string" },
-            alias_of: { type: "string", nullable: true },
           },
         },
         VideoRequest: {
@@ -192,7 +191,6 @@ export function modelToPublic(model: {
   variant: string;
   credits: number;
   description: string;
-  aliasOf?: string;
 }) {
   return {
     id: model.id,
@@ -202,6 +200,5 @@ export function modelToPublic(model: {
     variant: model.variant,
     credits: model.credits,
     description: model.description,
-    alias_of: model.aliasOf ?? null,
   };
 }

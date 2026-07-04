@@ -13,9 +13,7 @@ export default function ModelsPage() {
     <div className="paper-grain mx-auto max-w-6xl px-6 py-16">
       <h1 className="font-display text-4xl tracking-tight text-ink">Models</h1>
       <p className="mt-4 max-w-2xl text-ink-soft">
-        Every SeedDance video and Seedream image variant, with credit pricing
-        and provider fallback. SeedDance 2.5 is listed but served via 2.0 until
-        the native model ships.
+        Every SeedDance video and Seedream image variant, with credit pricing.
       </p>
 
       {families.map((family) => {
@@ -46,7 +44,7 @@ export default function ModelsPage() {
                         <td className="px-4 py-3 text-ink-2">{pub.variant}</td>
                         <td className="px-4 py-3 text-ink">{pub.credits}</td>
                         <td className="px-4 py-3 text-ink-soft">
-                          {pub.alias_of ? `Alias → ${pub.alias_of}` : pub.description}
+                          {pub.description}
                         </td>
                       </tr>
                     );

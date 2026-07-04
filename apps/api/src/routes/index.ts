@@ -143,7 +143,7 @@ app.post("/v1/videos", authMiddleware, async (c) => {
     const { refundHold } = await import("@seedance/db");
     await refundHold(db, ownerId, generationId, model.credits);
     return c.json(
-      { error: "Provider error", message: err instanceof Error ? err.message : "Unknown" },
+      { error: "Generation failed", message: "Upstream generation failed" },
       502,
     );
   }
@@ -179,7 +179,6 @@ app.post("/v1/videos", authMiddleware, async (c) => {
       status: "pending",
       canonicalModel: modelId,
       kind: "video",
-      provider,
       outputUrl: null,
       creditsCost: model.credits,
       error: null,
@@ -273,7 +272,7 @@ app.post("/v1/images", authMiddleware, async (c) => {
     const { refundHold } = await import("@seedance/db");
     await refundHold(db, ownerId, generationId, model.credits);
     return c.json(
-      { error: "Provider error", message: err instanceof Error ? err.message : "Unknown" },
+      { error: "Generation failed", message: "Upstream generation failed" },
       502,
     );
   }
@@ -294,7 +293,6 @@ function formatGeneration(gen: {
   status: string;
   canonicalModel: string;
   kind: string;
-  provider: string | null;
   outputUrl: string | null;
   creditsCost: number;
   error: string | null;
@@ -306,7 +304,6 @@ function formatGeneration(gen: {
     status: gen.status,
     model: gen.canonicalModel,
     kind: gen.kind,
-    provider: gen.provider,
     output_url: gen.outputUrl,
     credits_cost: gen.creditsCost,
     error: gen.error,
