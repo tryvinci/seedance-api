@@ -147,23 +147,39 @@ print(res.json())`,
       }
 
       try {
-        const [bootRes, gensRes] = await Promise.all([
+        const [balRes, bootRes, gensRes] = await Promise.all([
+          fetch("/api/account/balance", { cache: "no-store" }).catch(
+            () => null,
+          ),
           fetch("/api/account/bootstrap", { cache: "no-store" }).catch(
             () => null,
           ),
           fetch(`${apiBase}/v1/generations`, { headers }).catch(() => null),
         ]);
+
+        // Balance comes from the dedicated endpoint (same as navbar), not only
+        // bootstrap — key provisioning failures must not zero the wallet UI.
+        if (balRes?.ok) {
+          const data = await balRes.json();
+          const bal =
+            typeof data.balance_usd === "number" ? data.balance_usd : 0;
+          setBalanceUsd(
+            confirmedBalance != null ? Math.max(confirmedBalance, bal) : bal,
+          );
+        } else if (confirmedBalance != null) {
+          setBalanceUsd(confirmedBalance);
+        }
+
         if (bootRes?.ok) {
           const data = await bootRes.json();
-          const bootBal =
-            typeof data.balance_usd === "number" ? data.balance_usd : 0;
-          // Prefer the higher value so a just-confirmed payment is not wiped
-          // by a briefly stale read.
-          setBalanceUsd(
-            confirmedBalance != null
-              ? Math.max(confirmedBalance, bootBal)
-              : bootBal,
-          );
+          // Prefer balance endpoint; fall back to bootstrap if it was unavailable.
+          if (!balRes?.ok && typeof data.balance_usd === "number") {
+            setBalanceUsd(
+              confirmedBalance != null
+                ? Math.max(confirmedBalance, data.balance_usd)
+                : data.balance_usd,
+            );
+          }
           setDefaultKeyName(
             typeof data.default_api_key_name === "string"
               ? data.default_api_key_name
@@ -707,7 +723,17 @@ print(res.json())`,
 
       <AddBalanceModal
         open={balanceOpen}
-        onClose={() => setBalanceOpen(false)}
+        onClose={() => {
+          setBalanceOpen(false);
+          fetch("/api/account/balance", { cache: "no-store" })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+              if (data && typeof data.balance_usd === "number") {
+                setBalanceUsd(data.balance_usd);
+              }
+            })
+            .catch(() => {});
+        }}
       />
     </div>
   );
