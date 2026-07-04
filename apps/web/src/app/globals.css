@@ -85,6 +85,21 @@ body {
   background: transparent !important;
 }
 
+/* Primary CTA: ink background, white label (do not inherit dark text rules) */
+.cl-formButtonPrimary,
+.cl-formButtonPrimary span,
+.cl-formButtonPrimary * {
+  background-color: #181b20 !important;
+  color: #ffffff !important;
+}
+
+.cl-formButtonPrimary:hover,
+.cl-formButtonPrimary:hover span,
+.cl-formButtonPrimary:hover * {
+  background-color: #3a3f4a !important;
+  color: #ffffff !important;
+}
+
 /* Clerk APIKeys — readable inputs and expiration dropdown */
 .cl-apiKeys,
 .cl-apiKeys * {
@@ -96,8 +111,7 @@ body {
 .cl-apiKeys textarea,
 .cl-formFieldInput,
 .cl-selectButton,
-.cl-menuButton,
-.cl-button {
+.cl-menuButton {
   color: #181b20 !important;
 }
 

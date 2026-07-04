@@ -1,21 +1,22 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export function LogoMark({
   className = "h-8 w-8",
-  title,
+  title = "SeedanceAPI",
 }: {
   className?: string;
   title?: string;
 }) {
   return (
-    <span
-      className={`inline-flex items-center justify-center rounded-lg bg-accent font-sans text-sm font-bold leading-none text-white ${className}`}
-      role={title ? "img" : undefined}
-      aria-label={title}
-      aria-hidden={title ? undefined : true}
-    >
-      S
-    </span>
+    <Image
+      src="/logo.png"
+      alt={title}
+      width={40}
+      height={40}
+      className={`rounded-lg object-contain ${className}`}
+      priority
+    />
   );
 }
 
@@ -24,7 +25,7 @@ export function Logo({
   showWordmark = true,
   className = "",
   dark = false,
-  markClassName = "h-8 w-8 text-sm",
+  markClassName = "h-8 w-8",
 }: {
   href?: string | null;
   showWordmark?: boolean;

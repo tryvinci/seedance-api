@@ -23,9 +23,10 @@ export const clerkAppearance = {
     rootBox: "w-full",
     cardBox: "w-full shadow-none",
     card: "border border-[hsl(40_10%_88%)] bg-white shadow-none rounded-2xl",
-    headerTitle:
-      "font-[family-name:var(--font-instrument-serif)] text-2xl font-normal tracking-tight text-[hsl(220_18%_11%)]",
-    headerSubtitle: "text-sm text-[hsl(220_8%_42%)]",
+    // Brand copy lives in AuthShell; hide Clerk's default titles.
+    header: "hidden",
+    headerTitle: "hidden",
+    headerSubtitle: "hidden",
     socialButtonsBlockButton:
       "rounded-full border border-[hsl(40_10%_88%)] bg-white text-[hsl(220_18%_11%)] hover:bg-[hsl(40_14%_93%)]",
     socialButtonsBlockButtonText: "font-medium text-sm",
@@ -36,7 +37,8 @@ export const clerkAppearance = {
     formFieldInput:
       "rounded-xl border border-[hsl(40_10%_88%)] bg-[hsl(40_20%_96%)] text-[hsl(220_18%_11%)] focus:border-[hsl(213_94%_52%)] focus:ring-[hsl(213_94%_52%)]",
     formButtonPrimary:
-      "rounded-full bg-[hsl(220_18%_11%)] text-white text-sm font-medium shadow-none hover:bg-[hsl(220_10%_28%)]",
+      "rounded-full !bg-[#181b20] !text-white text-sm font-medium shadow-none hover:!bg-[#3a3f4a] hover:!text-white",
+    formButtonPrimaryText: "!text-white",
     footerActionLink:
       "font-medium text-[hsl(213_94%_52%)] hover:text-[hsl(221_83%_42%)]",
     identityPreviewEditButton:
@@ -52,6 +54,7 @@ export const clerkAppearance = {
       "border border-[hsl(40_10%_88%)] shadow-lg rounded-2xl",
     userButtonPopoverActionButton:
       "text-[hsl(220_18%_11%)] hover:bg-[hsl(40_14%_93%)]",
+    // Brand mark is rendered above the form in AuthShell.
     logoBox: "hidden",
     logoImage: "hidden",
   },

@@ -55,9 +55,14 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/logo.svg", type: "image/svg+xml" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "48x48" },
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
+  manifest: "/site.webmanifest",
   openGraph: {
     type: "website",
     locale: "en_US",
@@ -65,12 +70,21 @@ export const metadata: Metadata = {
     siteName: "SeedanceAPI",
     title,
     description,
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "SeedanceAPI",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "SeedanceAPI",
     description:
       "REST API for SeedDance video and Seedream image generation.",
+    images: ["/og.png"],
   },
   robots: {
     index: true,
@@ -93,7 +107,7 @@ const jsonLd = {
       "@id": `${siteUrl}/#organization`,
       name: "SeedanceAPI",
       url: siteUrl,
-      logo: `${siteUrl}/logo.svg`,
+      logo: `${siteUrl}/logo.png`,
       description,
     },
     {
