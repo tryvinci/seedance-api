@@ -47,9 +47,11 @@ export class WaveSpeedClient {
   }
 
   async poll(taskId: string): Promise<PollResult> {
-    const res = await fetch(`${WAVESPEED_BASE}/predictions/${taskId}`, {
-      headers: this.headers(),
-    });
+    // WaveSpeed result endpoint is /predictions/{id}/result (not /predictions/{id}).
+    const res = await fetch(
+      `${WAVESPEED_BASE}/predictions/${taskId}/result`,
+      { headers: this.headers() },
+    );
 
     if (!res.ok) {
       const text = await res.text();
@@ -200,11 +202,10 @@ export class WaveSpeedClient {
 function isModelNotFoundError(status: number, body: string): boolean {
   const msg = body.toLowerCase();
   return (
-    status === 404 ||
     msg.includes("model not found") ||
-    msg.includes("not found") ||
     msg.includes("unknown model") ||
-    msg.includes("does not exist")
+    msg.includes("does not exist") ||
+    (status === 404 && msg.includes("model"))
   );
 }
 

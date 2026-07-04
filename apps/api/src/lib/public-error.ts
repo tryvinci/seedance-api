@@ -37,8 +37,15 @@ export function publicErrorMessage(err: unknown): string {
   ) {
     return "Invalid request. Check your parameters and try again.";
   }
-  if (msg.includes("not found") || msg.includes("404") || msg.includes("unknown model")) {
-    return "Requested resource or model was not found.";
+  if (
+    msg.includes("model not found") ||
+    msg.includes("unknown model") ||
+    msg.includes("no provider available")
+  ) {
+    return "Requested model is not available. Try another model.";
+  }
+  if (msg.includes("poll failed") || msg.includes("failed to fetch output")) {
+    return "Could not retrieve generation output. Please try again.";
   }
   if (
     msg.includes("content") ||
