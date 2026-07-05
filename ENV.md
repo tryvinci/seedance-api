@@ -78,3 +78,20 @@ npx wrangler secret put DODO_TOPUP_PRODUCT_ID
 
 
 `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `NEXT_PUBLIC_APP_URL`, and `DODO_PAYMENTS_ENV` belong in `wrangler.jsonc` `vars` or Cloudflare dashboard **Variables** (not secrets).
+
+## PostHog (product + API analytics)
+
+| Variable | Worker | Notes |
+|----------|--------|-------|
+| `NEXT_PUBLIC_POSTHOG_KEY` | Web | Browser SDK (pageviews, checkout, identify) |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Web | Default `https://us.i.posthog.com` |
+| `POSTHOG_API_KEY` | Web + API | Same project key; server events (generations, top-ups, `api_request`) |
+| `POSTHOG_HOST` | Web + API | Optional ingest host |
+
+Events captured:
+
+- **Web**: `$pageview`, `checkout_started`, user identify via Clerk
+- **Web API**: `balance_topup` (Dodo webhook)
+- **API worker**: `api_request`, `generation_started`, `generation_completed`, `generation_failed`
+
+Create a dedicated PostHog project for SeedanceAPI (separate from other products). Cloudflare Workers **Observability** (already enabled on the API worker) complements PostHog for raw request latency and error rates.

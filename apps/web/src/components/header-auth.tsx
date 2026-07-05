@@ -47,6 +47,12 @@ function HeaderAuthInner() {
   return (
     <>
       <NavBalance />
+      <Link
+        href="/generations"
+        className="hidden rounded-full px-3 py-2 text-sm text-ink-soft transition hover:bg-paper-2 hover:text-ink sm:inline-flex"
+      >
+        Generations
+      </Link>
       <Link href="/dashboard" className={btnClass}>
         Dashboard
       </Link>

@@ -42,6 +42,49 @@ export function chargeUsd(
   return creditsToUsd(chargeCredits(model, opts));
 }
 
+/** Markup over upstream provider cost, by model tier. */
+export function providerMarkup(model: ModelDefinition): number {
+  if (model.kind === "image") return 0.1;
+  if (model.family === "seedance-2.5") return 0.3;
+  return 0.15;
+}
+
+/** Round USD up to the nearest cent ($0.01). */
+export function roundUpUsd(usd: number): number {
+  return Math.ceil(usd * 100) / 100;
+}
+
+export function retailCreditsFromCosts(
+  model: ModelDefinition,
+  catalogCredits: number,
+  providerCostUsd: number | null,
+): {
+  retailCredits: number;
+  retailUsd: number;
+  marginUsd: number | null;
+  markup: number | null;
+} {
+  const catalogUsd = creditsToUsd(catalogCredits);
+  if (providerCostUsd == null || providerCostUsd <= 0) {
+    return {
+      retailCredits: catalogCredits,
+      retailUsd: catalogUsd,
+      marginUsd: null,
+      markup: null,
+    };
+  }
+  const markup = providerMarkup(model);
+  const minRetailUsd = roundUpUsd(providerCostUsd * (1 + markup));
+  const retailUsd = roundUpUsd(Math.max(catalogUsd, minRetailUsd));
+  const retailCredits = usdToCredits(retailUsd);
+  return {
+    retailCredits,
+    retailUsd,
+    marginUsd: Math.round((retailUsd - providerCostUsd) * 100) / 100,
+    markup,
+  };
+}
+
 /** Prepaid balance packs (USD). Credits stored as cents. */
 export const CREDIT_PACKS: CreditPack[] = [
   { id: "starter", name: "Starter", credits: usdToCredits(5), priceUsd: 5 },

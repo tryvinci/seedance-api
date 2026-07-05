@@ -33,12 +33,26 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/dashboard", "/playground", "/sign-in", "/sign-up", "/api/"],
+        disallow: [
+          "/dashboard",
+          "/generations",
+          "/playground",
+          "/sign-in",
+          "/sign-up",
+          "/api/",
+        ],
       },
       ...AI_BOTS.map((userAgent) => ({
         userAgent,
         allow: publicPaths,
-        disallow: ["/dashboard", "/playground", "/sign-in", "/sign-up", "/api/"],
+        disallow: [
+          "/dashboard",
+          "/generations",
+          "/playground",
+          "/sign-in",
+          "/sign-up",
+          "/api/",
+        ],
       })),
     ],
     sitemap: "https://seedanceapi.us/sitemap.xml",

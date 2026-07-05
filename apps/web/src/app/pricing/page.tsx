@@ -58,12 +58,9 @@ export default function PricingPage() {
                   {formatUsd(pack.priceUsd)}
                 </p>
                 <p className="mt-1 text-sm text-ink-soft">Prepaid balance</p>
-                <BuyCreditsButton
-                  packId={pack.id}
-                  label="Buy"
-                  variant={popular ? "primary" : "secondary"}
-                  className="mt-auto pt-6"
-                />
+                <div className="mt-auto pt-6">
+                  <BuyCreditsButton packId={pack.id} label="Buy" />
+                </div>
               </div>
             );
           })}

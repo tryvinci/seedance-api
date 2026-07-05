@@ -13,6 +13,9 @@ export interface Env {
   ARK_BASE: string;
   AUTHORIZED_PARTIES: string;
   MEDIA_PUBLIC_URL?: string;
+  /** PostHog project API key (server-side). */
+  POSTHOG_API_KEY?: string;
+  POSTHOG_HOST?: string;
 }
 
 export interface AuthContext {

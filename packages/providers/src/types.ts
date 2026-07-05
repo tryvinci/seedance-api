@@ -21,6 +21,8 @@ export interface PollResult {
   status: "pending" | "processing" | "completed" | "failed";
   outputUrl?: string;
   error?: string;
+  /** Actual upstream cost in USD when returned by provider billing. */
+  costUsd?: number;
 }
 
 export interface VideoParams {

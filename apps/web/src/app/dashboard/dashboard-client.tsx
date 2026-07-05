@@ -1,7 +1,7 @@
 "use client";
 
 import { APIKeys, useAuth, useUser } from "@clerk/nextjs";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AddBalanceModal } from "@/components/add-balance-modal";
 import { BuyCreditsButton } from "@/components/buy-credits-button";
@@ -12,21 +12,10 @@ import { getDocsUrl } from "@/lib/docs-url";
 
 type SnippetLang = "curl" | "javascript" | "python";
 
-interface Generation {
-  id: string;
-  status: string;
-  model: string;
-  kind: string;
-  output_url: string | null;
-  price_usd: number;
-  created_at: string;
-}
-
 export function DashboardClient() {
   const { userId, getToken } = useAuth();
   const { user } = useUser();
   const [balanceUsd, setBalanceUsd] = useState<number | null>(null);
-  const [generations, setGenerations] = useState<Generation[]>([]);
   const [loading, setLoading] = useState(true);
   const [balanceOpen, setBalanceOpen] = useState(false);
   const [webhookOpen, setWebhookOpen] = useState(false);
@@ -35,9 +24,6 @@ export function DashboardClient() {
     "idle" | "saving" | "saved" | "error"
   >("idle");
 
-  const [filterModel, setFilterModel] = useState("all");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterKind, setFilterKind] = useState("all");
   const [defaultKey, setDefaultKey] = useState("");
   const [defaultKeyName, setDefaultKeyName] = useState<string | null>(null);
   const [keyVisible, setKeyVisible] = useState(false);
@@ -102,7 +88,6 @@ print(res.json())`,
         setLoading(false);
         return;
       }
-      const headers = { Authorization: `Bearer ${token}` };
 
       // Dodo appends payment_id on return; reconcile if webhook never arrived.
       const params = new URLSearchParams(window.location.search);
@@ -147,14 +132,13 @@ print(res.json())`,
       }
 
       try {
-        const [balRes, bootRes, gensRes] = await Promise.all([
+        const [balRes, bootRes] = await Promise.all([
           fetch("/api/account/balance", { cache: "no-store" }).catch(
             () => null,
           ),
           fetch("/api/account/bootstrap", { cache: "no-store" }).catch(
             () => null,
           ),
-          fetch(`${apiBase}/v1/generations`, { headers }).catch(() => null),
         ]);
 
         // Balance comes from the dedicated endpoint (same as navbar), not only
@@ -200,10 +184,6 @@ print(res.json())`,
             }
           }
         }
-        if (gensRes?.ok) {
-          const data = await gensRes.json();
-          setGenerations(data.data ?? []);
-        }
       } finally {
         setLoading(false);
         setKeyLoading(false);
@@ -212,20 +192,6 @@ print(res.json())`,
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap once per user session
   }, [userId, getToken, apiBase, storageKey]);
-
-  const models = useMemo(
-    () => [...new Set(generations.map((g) => g.model))].sort(),
-    [generations],
-  );
-
-  const filtered = useMemo(() => {
-    return generations.filter((g) => {
-      if (filterModel !== "all" && g.model !== filterModel) return false;
-      if (filterStatus !== "all" && g.status !== filterStatus) return false;
-      if (filterKind !== "all" && g.kind !== filterKind) return false;
-      return true;
-    });
-  }, [generations, filterModel, filterStatus, filterKind]);
 
   async function saveWebhook() {
     setWebhookStatus("saving");
@@ -550,121 +516,21 @@ print(res.json())`,
 
         {/* Generations */}
         <section className="mt-6 rounded-2xl border border-paper-edge bg-white p-6">
-          <div className="flex flex-wrap items-end justify-between gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="font-display text-xl text-ink">Generations</h2>
               <p className="mt-1 text-sm text-ink-soft">
-                {filtered.length}
-                {filtered.length !== generations.length
-                  ? ` of ${generations.length}`
-                  : ""}{" "}
-                recent
+                Browse the last 7 days of jobs, open outputs, and page through
+                history.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <select
-                value={filterKind}
-                onChange={(e) => setFilterKind(e.target.value)}
-                className="rounded-lg border border-paper-edge bg-paper/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-              >
-                <option value="all">All types</option>
-                <option value="video">Video</option>
-                <option value="image">Image</option>
-              </select>
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="rounded-lg border border-paper-edge bg-paper/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-              >
-                <option value="all">All statuses</option>
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="completed">Completed</option>
-                <option value="failed">Failed</option>
-              </select>
-              <select
-                value={filterModel}
-                onChange={(e) => setFilterModel(e.target.value)}
-                className="max-w-[200px] rounded-lg border border-paper-edge bg-paper/40 px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-              >
-                <option value="all">All models</option>
-                {models.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Link
+              href="/generations"
+              className="inline-flex items-center justify-center rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-paper transition hover:bg-ink-2"
+            >
+              View generations
+            </Link>
           </div>
-
-          {loading ? (
-            <p className="mt-6 text-sm text-ink-soft">Loading…</p>
-          ) : generations.length === 0 ? (
-            <p className="mt-6 text-sm text-ink-soft">
-              No generations yet. Create an API key, add balance, then call the
-              API.
-            </p>
-          ) : filtered.length === 0 ? (
-            <p className="mt-6 text-sm text-ink-soft">
-              No generations match these filters.
-            </p>
-          ) : (
-            <div className="mt-6 overflow-x-auto">
-              <table className="w-full min-w-[520px] text-left text-sm">
-                <thead>
-                  <tr className="border-b border-paper-edge text-ink-soft">
-                    <th className="pb-3 pr-4 font-mono text-[11px] font-medium uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="pb-3 pr-4 font-mono text-[11px] font-medium uppercase tracking-wider">
-                      Model
-                    </th>
-                    <th className="pb-3 pr-4 font-mono text-[11px] font-medium uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="pb-3 pr-4 font-mono text-[11px] font-medium uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="pb-3 font-mono text-[11px] font-medium uppercase tracking-wider">
-                      Price
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((g) => (
-                    <tr
-                      key={g.id}
-                      className="border-b border-paper-edge/70 last:border-0"
-                    >
-                      <td className="py-3 pr-4 font-mono text-xs text-ink-2">
-                        {g.id.slice(0, 8)}…
-                      </td>
-                      <td className="py-3 pr-4 text-ink">{g.model}</td>
-                      <td className="py-3 pr-4 capitalize text-ink-soft">
-                        {g.kind}
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span
-                          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            g.status === "completed"
-                              ? "bg-accent/10 text-accent"
-                              : g.status === "failed"
-                                ? "bg-red-50 text-red-600"
-                                : "bg-paper-2 text-ink-soft"
-                          }`}
-                        >
-                          {g.status}
-                        </span>
-                      </td>
-                      <td className="py-3 text-ink">
-                        {formatUsd(g.price_usd ?? 0)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
         </section>
 
         {/* Optional webhook */}

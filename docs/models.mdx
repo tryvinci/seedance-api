@@ -12,14 +12,14 @@ Each model ID follows `{family}/{variant}`.
 
 | Model ID | Price |
 | --- | --- |
-| `seedance-2.5/text-to-video` | $0.16/sec |
-| `seedance-2.5/image-to-video` | $0.16/sec |
-| `seedance-2.0/text-to-video` | $0.16/sec |
-| `seedance-2.0/image-to-video` | $0.16/sec |
-| `seedance-2.0-fast/text-to-video` | $0.13/sec |
-| `seedance-2.0-mini/text-to-video` | $0.16/sec |
-| `seedance-1.5-pro/text-to-video` | $0.06/sec |
-| `seedance-1.0-pro/text-to-video` | $0.06/sec |
+| `seedance-2.5/text-to-video` | from $0.22/sec (live quote) |
+| `seedance-2.5/image-to-video` | from $0.22/sec (live quote) |
+| `seedance-2.0/text-to-video` | from $0.22/sec (live quote) |
+| `seedance-2.0/image-to-video` | from $0.22/sec (live quote) |
+| `seedance-2.0-fast/text-to-video` | from $0.13/sec (live quote) |
+| `seedance-2.0-mini/text-to-video` | from $0.22/sec (live quote) |
+| `seedance-1.5-pro/text-to-video` | from $0.06/sec (live quote) |
+| `seedance-1.0-pro/text-to-video` | from $0.06/sec (live quote) |
 
 ## Image models
 
@@ -32,5 +32,5 @@ Each model ID follows `{family}/{variant}`.
 
 <Note>
   Call `GET /v1/models` for the live catalog (`price_usd` + `price_unit`).
-  A 5-second video at `$0.16/sec` costs `$0.80`.
+  A 5-second video at `$0.22/sec` starts at `$1.10`, but **image-to-video and longer clips are quoted live** via `POST /v1/quote` because upstream cost varies by duration, resolution, and inputs. We always charge at least WaveSpeed cost plus tiered margin (30% Seedance 2.5, 15% other video, 10% images), rounded up to the nearest cent.
 </Note>

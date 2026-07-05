@@ -141,6 +141,8 @@ export function PlaygroundClient() {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<string | null>(null);
   const [charged, setCharged] = useState<number | null>(null);
+  const [quotedPrice, setQuotedPrice] = useState<number | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -157,6 +159,7 @@ export function PlaygroundClient() {
       ? chargeUsd(model, { duration })
       : model.priceUsd
     : 0;
+  const displayPrice = quotedPrice ?? estimate;
 
   const mediaReady =
     !mediaSlot?.required || mediaItems.length > 0;
@@ -258,6 +261,54 @@ export function PlaygroundClient() {
     }
     return { image: urls.length === 1 ? urls[0] : urls };
   }
+
+  useEffect(() => {
+    if (!model || !prompt.trim()) {
+      setQuotedPrice(null);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setQuoteLoading(true);
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const apiBase = getApiBaseUrl();
+        const media = mediaPayload();
+        const res = await fetch(`${apiBase}/v1/quote`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: model.id,
+            prompt: prompt.trim(),
+            ...(kind === "video"
+              ? { duration, aspect_ratio: aspectRatio }
+              : {}),
+            ...media,
+          }),
+        });
+        const text = await res.text();
+        if (!text || cancelled) return;
+        const data = JSON.parse(text) as Record<string, unknown>;
+        if (res.ok && typeof data.price_usd === "number") {
+          setQuotedPrice(data.price_usd);
+        }
+      } catch {
+        if (!cancelled) setQuotedPrice(null);
+      } finally {
+        if (!cancelled) setQuoteLoading(false);
+      }
+    }, 400);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [model, prompt, kind, duration, aspectRatio, mediaItems, getToken]);
 
   async function pollGeneration(id: string) {
     const apiBase = getApiBaseUrl();
@@ -553,11 +604,17 @@ export function PlaygroundClient() {
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <p className="text-sm text-paper/50">
-                Est.{" "}
+                {quoteLoading ? "Pricing…" : "Est."}{" "}
                 <span className="font-medium text-paper">
-                  {formatUsd(estimate)}
+                  {formatUsd(displayPrice)}
                 </span>
-                {kind === "video" && model && (
+                {quotedPrice != null && quotedPrice > estimate && (
+                  <span className="text-paper/40">
+                    {" "}
+                    (live quote; catalog was {formatUsd(estimate)})
+                  </span>
+                )}
+                {kind === "video" && model && quotedPrice == null && (
                   <span className="text-paper/40">
                     {" "}
                     ({duration}s × {formatPrice(model.priceUsd, "second")})
@@ -634,7 +691,7 @@ export function PlaygroundClient() {
               <span>
                 Charged{" "}
                 <span className="text-paper">
-                  {formatUsd(charged ?? estimate)}
+                  {formatUsd(charged ?? displayPrice)}
                 </span>
               </span>
               {resultUrl && (

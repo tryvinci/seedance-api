@@ -3,6 +3,8 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import { getAppUrl, getDashboardUrl } from "@/lib/app-url";
 import { clerkAppearance } from "@/lib/clerk-appearance";
+import { PostHogIdentify } from "@/components/posthog-identify";
+import { PostHogProvider } from "@/components/posthog-provider";
 
 export function Providers({
   children,
@@ -17,11 +19,9 @@ export function Providers({
   const appUrl = getAppUrl();
   const dashboardUrl = getDashboardUrl();
 
-  if (!key) {
-    return <>{children}</>;
-  }
-
-  return (
+  const content = !key ? (
+    children
+  ) : (
     <ClerkProvider
       publishableKey={key}
       appearance={clerkAppearance}
@@ -31,7 +31,10 @@ export function Providers({
       signUpFallbackRedirectUrl={dashboardUrl}
       afterSignOutUrl={appUrl}
     >
+      <PostHogIdentify />
       {children}
     </ClerkProvider>
   );
+
+  return <PostHogProvider>{content}</PostHogProvider>;
 }

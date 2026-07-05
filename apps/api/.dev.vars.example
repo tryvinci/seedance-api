@@ -11,3 +11,7 @@ WAVESPEED_API_KEY=
 
 # Optional override (default in wrangler.jsonc)
 # ARK_BASE=https://ark.ap-southeast.bytepluses.com
+
+# PostHog (optional) — server-side API generation events
+# POSTHOG_API_KEY=phc_
+# POSTHOG_HOST=https://us.i.posthog.com

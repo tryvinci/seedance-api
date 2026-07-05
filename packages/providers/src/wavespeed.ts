@@ -46,6 +46,73 @@ export class WaveSpeedClient {
     });
   }
 
+  /** Quote USD cost for one inference with the given inputs. */
+  async quotePricing(
+    modelId: string,
+    inputs: Record<string, unknown>,
+  ): Promise<number> {
+    const res = await fetch(`${WAVESPEED_BASE}/model/pricing`, {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify({ model_id: modelId, inputs }),
+    });
+
+    const text = await res.text();
+    if (!res.ok) {
+      throw new Error(`WaveSpeed pricing failed: ${res.status} ${text}`);
+    }
+
+    let data: {
+      code?: number;
+      message?: string;
+      data?: { unit_price?: number };
+    };
+    try {
+      data = JSON.parse(text) as typeof data;
+    } catch {
+      throw new Error(`WaveSpeed pricing invalid JSON: ${text.slice(0, 200)}`);
+    }
+
+    if (typeof data.code === "number" && data.code !== 200) {
+      throw new Error(
+        `WaveSpeed pricing failed: ${data.code} ${data.message ?? text}`,
+      );
+    }
+
+    const unitPrice = data.data?.unit_price;
+    if (typeof unitPrice !== "number" || unitPrice <= 0) {
+      throw new Error("WaveSpeed pricing: missing unit_price");
+    }
+    return unitPrice;
+  }
+
+  /** Fetch actual billed amount for a completed prediction. */
+  async getBillingForPrediction(predictionUuid: string): Promise<number | null> {
+    const res = await fetch(`${WAVESPEED_BASE}/billings/search`, {
+      method: "POST",
+      headers: this.headers(),
+      body: JSON.stringify({
+        billing_type: "deduct",
+        prediction_uuids: [predictionUuid],
+        page: 1,
+        page_size: 1,
+      }),
+    });
+
+    if (!res.ok) {
+      console.warn("WaveSpeed billing lookup failed:", res.status);
+      return null;
+    }
+
+    const data = (await res.json()) as {
+      data?: {
+        items?: Array<{ price?: number }>;
+      };
+    };
+    const price = data.data?.items?.[0]?.price;
+    return typeof price === "number" && price > 0 ? price : null;
+  }
+
   async poll(taskId: string): Promise<PollResult> {
     // WaveSpeed result endpoint is /predictions/{id}/result (not /predictions/{id}).
     const res = await fetch(

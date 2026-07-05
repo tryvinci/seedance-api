@@ -7,6 +7,8 @@ import {
   type DodoPayment,
 } from "@/lib/credit-payment";
 import { getDb } from "@/lib/db";
+import { captureServerEvent } from "@/lib/posthog-server";
+import { creditsToUsd } from "@seedance/models";
 
 export const dynamic = "force-dynamic";
 
@@ -55,12 +57,20 @@ export async function POST(req: Request) {
 
     try {
       const db = await getDb();
-      await creditSucceededPayment(
+      const result = await creditSucceededPayment(
         db,
         userId,
         { ...event.data, status: event.data?.status ?? "succeeded" },
         paymentId,
       );
+      if (result.credited) {
+        await captureServerEvent(userId, "balance_topup", {
+          payment_id: paymentId,
+          credits: result.credits,
+          amount_usd: creditsToUsd(result.credits),
+          pack_id: metadata.pack_id,
+        });
+      }
     } catch (err) {
       console.error("Failed to credit wallet:", err);
       return NextResponse.json({ error: "Credit failed" }, { status: 500 });

@@ -64,7 +64,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.5 Text-to-Video",
     "seedance-2.5",
     "text-to-video",
-    0.16,
+    0.22,
     {
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/text-to-video",
@@ -76,7 +76,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.5 Image-to-Video",
     "seedance-2.5",
     "image-to-video",
-    0.16,
+    0.22,
     {
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/image-to-video",
@@ -88,7 +88,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.5 Reference-to-Video",
     "seedance-2.5",
     "reference-to-video",
-    0.16,
+    0.22,
     {
       wavespeed: "bytedance/seedance-2.0/text-to-video",
     },
@@ -101,7 +101,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Text-to-Video",
     "seedance-2.0",
     "text-to-video",
-    0.16,
+    0.22,
     {
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/text-to-video",
@@ -113,7 +113,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Image-to-Video",
     "seedance-2.0",
     "image-to-video",
-    0.16,
+    0.22,
     {
       modelark: "dreamina-seedance-2-0-260128",
       wavespeed: "bytedance/seedance-2.0/image-to-video",
@@ -125,7 +125,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Reference-to-Video",
     "seedance-2.0",
     "reference-to-video",
-    0.16,
+    0.22,
     {
       wavespeed: "bytedance/seedance-2.0/text-to-video",
     },
@@ -136,7 +136,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Video Extend",
     "seedance-2.0",
     "video-extend",
-    0.16,
+    0.22,
     {
       wavespeed: "bytedance/seedance-2.0/video-extend",
     },
@@ -206,7 +206,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Fast Text-to-Video Turbo",
     "seedance-2.0-fast",
     "text-to-video",
-    0.16,
+    0.22,
     {
       wavespeed: "bytedance/seedance-2.0-fast/text-to-video-turbo",
     },
@@ -217,7 +217,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Fast Image-to-Video Turbo",
     "seedance-2.0-fast",
     "image-to-video",
-    0.16,
+    0.22,
     {
       wavespeed: "bytedance/seedance-2.0-fast/image-to-video-turbo",
     },
@@ -252,7 +252,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Mini Text-to-Video",
     "seedance-2.0-mini",
     "text-to-video",
-    0.16,
+    0.22,
     {
       wavespeed: "bytedance/seedance-2.0-mini/text-to-video",
     },
@@ -263,7 +263,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Mini Image-to-Video",
     "seedance-2.0-mini",
     "image-to-video",
-    0.16,
+    0.22,
     {
       wavespeed: "bytedance/seedance-2.0-mini/image-to-video",
     },
@@ -274,7 +274,7 @@ export const MODEL_CATALOG: ModelDefinition[] = [
     "Seedance 2.0 Mini Video Extend",
     "seedance-2.0-mini",
     "video-extend",
-    0.16,
+    0.22,
     {
       wavespeed: "bytedance/seedance-2.0-mini/video-extend",
     },

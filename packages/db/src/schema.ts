@@ -30,6 +30,10 @@ export const generations = sqliteTable("generations", {
   outputR2Key: text("output_r2_key"),
   outputUrl: text("output_url"),
   creditsCost: integer("credits_cost").notNull(),
+  /** Upstream provider cost in credits (1 credit = $0.01). From WaveSpeed pricing/billing API. */
+  providerCostCredits: integer("provider_cost_credits"),
+  /** WaveSpeed model path used for pricing/submit. */
+  providerModelPath: text("provider_model_path"),
   error: text("error"),
   createdAt: text("created_at").notNull(),
   updatedAt: text("updated_at").notNull(),

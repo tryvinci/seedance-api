@@ -8,8 +8,6 @@ import {
   videoParamsSchema,
   imageParamsSchema,
   creditsToUsd,
-  chargeCredits,
-  chargeUsd,
 } from "@seedance/models";
 import { publicErrorPayload } from "../lib/public-error";
 import {
@@ -18,10 +16,12 @@ import {
   createGeneration,
   getGeneration,
   listGenerations,
+  countGenerations,
 } from "@seedance/db";
 import {
   submitVideoWithFallback,
   generateImageWithFallback,
+  quoteGeneration,
 } from "@seedance/providers";
 import type { Env, AuthContext } from "../env";
 import type { AppVariables } from "../middleware/auth";
@@ -35,6 +35,7 @@ import {
   publicMediaUrl,
 } from "../lib/utils";
 import type { PollParams } from "../workflows/poll-generation";
+import { generationEventProps, trackEvent } from "../lib/analytics";
 
 type AppEnv = { Bindings: Env; Variables: AppVariables };
 
@@ -50,6 +51,7 @@ app.use("*", async (c, next) => {
   c.header("Access-Control-Max-Age", "86400");
   // Must use c.body so CORS headers set above are included (bare Response drops them).
   if (c.req.method === "OPTIONS") return c.body(null, 204);
+  const started = Date.now();
   try {
     await next();
   } catch (err) {
@@ -62,6 +64,29 @@ app.use("*", async (c, next) => {
       },
       500,
     );
+  } finally {
+    const path = c.req.path;
+    if (path.startsWith("/v1/")) {
+      let ownerId: string | undefined;
+      try {
+        ownerId = (c.get("auth") as AuthContext).ownerId;
+      } catch {
+        ownerId = undefined;
+      }
+      trackEvent(
+        c.env,
+        c.executionCtx?.waitUntil.bind(c.executionCtx),
+        ownerId ?? "anonymous",
+        "api_request",
+        {
+          path,
+          method: c.req.method,
+          status: c.res.status,
+          duration_ms: Date.now() - started,
+          authenticated: Boolean(ownerId),
+        },
+      );
+    }
   }
 });
 
@@ -97,11 +122,86 @@ app.get("/v1/credits", authMiddleware, async (c) => {
   return c.json({ balance_usd: creditsToUsd(balance) });
 });
 
+app.post("/v1/quote", authMiddleware, async (c) => {
+  const body = await c.req.json();
+  const modelId = body.model as string;
+  if (!modelId) return c.json({ error: "model is required" }, 400);
+
+  let model;
+  try {
+    model = resolveModel(modelId);
+  } catch {
+    return c.json({ error: `Unknown model: ${modelId}` }, 400);
+  }
+  if (!isModelRunnable(model, providerKeys(c.env))) {
+    return c.json(
+      {
+        error: "Model unavailable",
+        message: "This model is not available right now. Pick another from GET /v1/models.",
+      },
+      503,
+    );
+  }
+
+  const schema = model.kind === "video" ? videoParamsSchema : imageParamsSchema;
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: "Invalid params", details: parsed.error.flatten() }, 400);
+  }
+
+  try {
+    const quote = await quoteGeneration(
+      {
+        modelarkApiKey: c.env.MODELARK_API_KEY,
+        wavespeedApiKey: c.env.WAVESPEED_API_KEY,
+        arkBase: c.env.ARK_BASE,
+      },
+      modelId,
+      parsed.data,
+      providerKeys(c.env),
+    );
+    return c.json({
+      model: modelId,
+      price_usd: quote.retailUsd,
+      price_unit: model.priceUnit,
+      catalog_usd: quote.catalogUsd,
+      provider_cost_usd: quote.providerCostUsd,
+      margin_usd: quote.marginUsd,
+      markup: quote.markup ?? undefined,
+      provider: quote.provider,
+      provider_model_path: quote.providerModelPath,
+    });
+  } catch (err) {
+    return c.json(
+      {
+        error: "Pricing unavailable",
+        message: err instanceof Error ? err.message : "Could not quote price",
+      },
+      503,
+    );
+  }
+});
+
 app.get("/v1/generations", authMiddleware, async (c) => {
   const { ownerId } = c.get("auth") as AuthContext;
   const db = getDb(c.env);
-  const gens = await listGenerations(db, ownerId);
-  return c.json({ data: gens.map(formatGeneration) });
+  const limitRaw = Number(c.req.query("limit") ?? 25);
+  const offsetRaw = Number(c.req.query("offset") ?? 0);
+  const limit = [10, 25, 50].includes(limitRaw) ? limitRaw : 25;
+  const offset = Number.isFinite(offsetRaw) && offsetRaw > 0 ? Math.floor(offsetRaw) : 0;
+  // Outputs are retained ~7 days; only list recent generations.
+  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const [gens, total] = await Promise.all([
+    listGenerations(db, ownerId, { limit, offset, since }),
+    countGenerations(db, ownerId, since),
+  ]);
+  return c.json({
+    data: gens.map(formatGeneration),
+    total,
+    limit,
+    offset,
+    since,
+  });
 });
 
 app.get("/v1/generations/:id", authMiddleware, async (c) => {
@@ -154,8 +254,33 @@ app.post("/v1/videos", authMiddleware, async (c) => {
 
   const db = getDb(c.env);
   const generationId = crypto.randomUUID();
-  const costCredits = chargeCredits(model, { duration: parsed.data.duration });
-  const costUsd = chargeUsd(model, { duration: parsed.data.duration });
+
+  const providerConfig = {
+    modelarkApiKey: c.env.MODELARK_API_KEY,
+    wavespeedApiKey: c.env.WAVESPEED_API_KEY,
+    arkBase: c.env.ARK_BASE,
+  };
+
+  let quote;
+  try {
+    quote = await quoteGeneration(
+      providerConfig,
+      modelId,
+      parsed.data,
+      providerKeys(c.env),
+    );
+  } catch (err) {
+    return c.json(
+      {
+        error: "Pricing unavailable",
+        message: err instanceof Error ? err.message : "Could not quote price",
+      },
+      503,
+    );
+  }
+
+  const costCredits = quote.retailCredits;
+  const costUsd = quote.retailUsd;
 
   try {
     await holdCredits(db, ownerId, costCredits, generationId);
@@ -166,18 +291,13 @@ app.post("/v1/videos", authMiddleware, async (c) => {
           error: "Insufficient balance",
           price_usd: costUsd,
           price_unit: model.priceUnit,
+          provider_cost_usd: quote.providerCostUsd,
         },
         402,
       );
     }
     throw e;
   }
-
-  const providerConfig = {
-    modelarkApiKey: c.env.MODELARK_API_KEY,
-    wavespeedApiKey: c.env.WAVESPEED_API_KEY,
-    arkBase: c.env.ARK_BASE,
-  };
 
   let provider: "modelark" | "wavespeed";
   let taskId: string;
@@ -202,6 +322,8 @@ app.post("/v1/videos", authMiddleware, async (c) => {
     canonicalModel: modelId,
     paramsJson: JSON.stringify(parsed.data),
     creditsCost: costCredits,
+    providerCostCredits: quote.providerCostCredits,
+    providerModelPath: quote.providerModelPath,
     provider,
     providerTaskId: taskId,
     status: "pending",
@@ -219,6 +341,23 @@ app.post("/v1/videos", authMiddleware, async (c) => {
     creditsCost: costCredits,
   };
   await c.env.POLL_WORKFLOW.create({ id: generationId, params: workflowParams });
+
+    trackEvent(
+      c.env,
+      c.executionCtx?.waitUntil.bind(c.executionCtx),
+      ownerId,
+      "generation_started",
+      generationEventProps({
+        generationId,
+        model: modelId,
+        kind: "video",
+        provider,
+        creditsCost: costCredits,
+        providerCostCredits: quote.providerCostCredits,
+        duration: parsed.data.duration,
+        status: "pending",
+      }),
+    );
 
   return c.json(
     formatGeneration({
@@ -268,8 +407,33 @@ app.post("/v1/images", authMiddleware, async (c) => {
 
   const db = getDb(c.env);
   const generationId = crypto.randomUUID();
-  const costCredits = chargeCredits(model);
-  const costUsd = chargeUsd(model);
+
+  const providerConfig = {
+    modelarkApiKey: c.env.MODELARK_API_KEY,
+    wavespeedApiKey: c.env.WAVESPEED_API_KEY,
+    arkBase: c.env.ARK_BASE,
+  };
+
+  let quote;
+  try {
+    quote = await quoteGeneration(
+      providerConfig,
+      modelId,
+      parsed.data,
+      providerKeys(c.env),
+    );
+  } catch (err) {
+    return c.json(
+      {
+        error: "Pricing unavailable",
+        message: err instanceof Error ? err.message : "Could not quote price",
+      },
+      503,
+    );
+  }
+
+  const costCredits = quote.retailCredits;
+  const costUsd = quote.retailUsd;
 
   try {
     await holdCredits(db, ownerId, costCredits, generationId);
@@ -280,18 +444,13 @@ app.post("/v1/images", authMiddleware, async (c) => {
           error: "Insufficient balance",
           price_usd: costUsd,
           price_unit: model.priceUnit,
+          provider_cost_usd: quote.providerCostUsd,
         },
         402,
       );
     }
     throw e;
   }
-
-  const providerConfig = {
-    modelarkApiKey: c.env.MODELARK_API_KEY,
-    wavespeedApiKey: c.env.WAVESPEED_API_KEY,
-    arkBase: c.env.ARK_BASE,
-  };
 
   try {
     const { result, provider } = await generateImageWithFallback(
@@ -316,6 +475,8 @@ app.post("/v1/images", authMiddleware, async (c) => {
       canonicalModel: modelId,
       paramsJson: JSON.stringify(parsed.data),
       creditsCost: costCredits,
+      providerCostCredits: quote.providerCostCredits,
+      providerModelPath: quote.providerModelPath,
       provider,
       status: "completed",
     });
@@ -325,6 +486,22 @@ app.post("/v1/images", authMiddleware, async (c) => {
       outputUrl: outputUrls[0],
     });
     await commitHold(db, generationId);
+
+    trackEvent(
+      c.env,
+      c.executionCtx?.waitUntil.bind(c.executionCtx),
+      ownerId,
+      "generation_completed",
+      generationEventProps({
+        generationId,
+        model: modelId,
+        kind: "image",
+        provider,
+        creditsCost: costCredits,
+        providerCostCredits: quote.providerCostCredits,
+        status: "completed",
+      }),
+    );
 
     return c.json({
       id: generationId,
@@ -441,17 +618,28 @@ function formatGeneration(gen: {
   kind: string;
   outputUrl: string | null;
   creditsCost: number;
+  providerCostCredits?: number | null;
   error: string | null;
   createdAt: string;
   updatedAt: string;
 }) {
+  const priceUsd = creditsToUsd(gen.creditsCost);
+  const providerCostUsd =
+    gen.providerCostCredits != null
+      ? creditsToUsd(gen.providerCostCredits)
+      : null;
   return {
     id: gen.id,
     status: gen.status,
     model: gen.canonicalModel,
     kind: gen.kind,
     output_url: gen.outputUrl,
-    price_usd: creditsToUsd(gen.creditsCost),
+    price_usd: priceUsd,
+    provider_cost_usd: providerCostUsd,
+    margin_usd:
+      providerCostUsd != null
+        ? Math.round((priceUsd - providerCostUsd) * 100) / 100
+        : null,
     error: gen.error,
     created_at: gen.createdAt,
     updated_at: gen.updatedAt,

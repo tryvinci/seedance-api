@@ -123,12 +123,9 @@ export function AddBalanceModal({
                 <p className="mt-1 font-display text-xl text-ink">
                   {formatUsd(pack.priceUsd)}
                 </p>
-                <BuyCreditsButton
-                  packId={pack.id}
-                  label="Buy"
-                  variant={i === 1 ? "primary" : "secondary"}
-                  className="mt-3"
-                />
+                <div className="mt-3">
+                  <BuyCreditsButton packId={pack.id} label="Buy" />
+                </div>
               </div>
             ))}
           </div>

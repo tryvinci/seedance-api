@@ -10,10 +10,12 @@ import {
   getGeneration,
   getWebhookEndpoint,
 } from "@seedance/db";
-import { pollProvider } from "@seedance/providers";
+import { pollProvider, WaveSpeedClient } from "@seedance/providers";
+import { usdToCredits } from "@seedance/models";
 import type { Env } from "../env";
 import { getDb, copyToR2, publicMediaUrl, deliverWebhook } from "../lib/utils";
 import { publicErrorMessage } from "../lib/public-error";
+import { generationEventProps, trackEventAwait } from "../lib/analytics";
 
 export interface PollParams {
   generationId: string;
@@ -76,6 +78,21 @@ export class PollGenerationWorkflow extends WorkflowEntrypoint<
         });
         await refundHold(db, ownerId, generationId, creditsCost);
       });
+      await step.do("track-failed", async () => {
+        const gen = await getGeneration(db, generationId);
+        await trackEventAwait(this.env, ownerId, "generation_failed", {
+          ...generationEventProps({
+            generationId,
+            model: gen?.canonicalModel ?? "unknown",
+            kind: gen?.kind ?? "video",
+            provider,
+            creditsCost,
+            status: "failed",
+            error: errorMsg,
+          }),
+          refunded: true,
+        });
+      });
       await this.notifyUser(step, generationId, ownerId, "failed");
       return;
     }
@@ -92,6 +109,34 @@ export class PollGenerationWorkflow extends WorkflowEntrypoint<
       });
       await commitHold(db, generationId);
       return key;
+    });
+
+    await step.do("reconcile-billing", async () => {
+      if (provider !== "wavespeed" || !taskId) return;
+      const actualUsd = await new WaveSpeedClient({
+        modelarkApiKey: this.env.MODELARK_API_KEY,
+        wavespeedApiKey: this.env.WAVESPEED_API_KEY,
+        arkBase: this.env.ARK_BASE,
+      }).getBillingForPrediction(taskId);
+      if (actualUsd == null) return;
+      await updateGeneration(db, generationId, {
+        providerCostCredits: usdToCredits(actualUsd),
+      });
+    });
+
+    await step.do("track-completed", async () => {
+      const gen = await getGeneration(db, generationId);
+      await trackEventAwait(this.env, ownerId, "generation_completed", {
+        ...generationEventProps({
+          generationId,
+          model: gen?.canonicalModel ?? "unknown",
+          kind: gen?.kind ?? "video",
+          provider,
+          creditsCost,
+          providerCostCredits: gen?.providerCostCredits ?? null,
+          status: "completed",
+        }),
+      });
     });
 
     await this.notifyUser(step, generationId, ownerId, "completed", r2Key);

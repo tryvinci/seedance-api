@@ -1,4 +1,4 @@
-import { eq, desc, and, sql, inArray } from "drizzle-orm";
+import { eq, desc, and, sql, inArray, gte } from "drizzle-orm";
 import type { DrizzleD1Database } from "drizzle-orm/d1";
 import {
   wallets,
@@ -198,6 +198,8 @@ export async function createGeneration(
     canonicalModel: string;
     paramsJson: string;
     creditsCost: number;
+    providerCostCredits?: number | null;
+    providerModelPath?: string | null;
     provider?: string;
     providerTaskId?: string;
     status?: string;
@@ -214,6 +216,8 @@ export async function createGeneration(
     status: data.status ?? "pending",
     paramsJson: data.paramsJson,
     creditsCost: data.creditsCost,
+    providerCostCredits: data.providerCostCredits ?? null,
+    providerModelPath: data.providerModelPath ?? null,
     createdAt: ts,
     updatedAt: ts,
   });
@@ -226,6 +230,8 @@ export async function updateGeneration(
     status: string;
     provider: string;
     providerTaskId: string;
+    providerCostCredits: number | null;
+    providerModelPath: string | null;
     outputR2Key: string;
     outputUrl: string;
     error: string;
@@ -248,14 +254,42 @@ export async function getGeneration(
   return db.select().from(generations).where(conditions).get();
 }
 
-export async function listGenerations(db: Db, ownerId: string, limit = 50) {
+export async function listGenerations(
+  db: Db,
+  ownerId: string,
+  opts?: { limit?: number; offset?: number; since?: string },
+) {
+  const limit = opts?.limit ?? 50;
+  const offset = opts?.offset ?? 0;
+  const conditions = [eq(generations.ownerId, ownerId)];
+  if (opts?.since) {
+    conditions.push(gte(generations.createdAt, opts.since));
+  }
   return db
     .select()
     .from(generations)
-    .where(eq(generations.ownerId, ownerId))
+    .where(and(...conditions))
     .orderBy(desc(generations.createdAt))
     .limit(limit)
+    .offset(offset)
     .all();
+}
+
+export async function countGenerations(
+  db: Db,
+  ownerId: string,
+  since?: string,
+): Promise<number> {
+  const conditions = [eq(generations.ownerId, ownerId)];
+  if (since) {
+    conditions.push(gte(generations.createdAt, since));
+  }
+  const row = await db
+    .select({ n: sql<number>`count(*)` })
+    .from(generations)
+    .where(and(...conditions))
+    .get();
+  return Number(row?.n ?? 0);
 }
 
 export async function upsertWebhookEndpoint(

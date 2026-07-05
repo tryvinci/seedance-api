@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { CREDIT_PACKS } from "@seedance/models";
+import { getPostHogKey, initPostHog, posthog } from "@/lib/posthog";
 
 export function BuyCreditsButton({
   packId,
@@ -17,6 +19,14 @@ export function BuyCreditsButton({
 
   async function handleBuy() {
     setLoading(true);
+    const pack = CREDIT_PACKS.find((p) => p.id === packId);
+    if (getPostHogKey()) {
+      initPostHog();
+      posthog.capture("checkout_started", {
+        pack_id: packId,
+        amount_usd: pack?.priceUsd,
+      });
+    }
     try {
       const res = await fetch("/api/billing/checkout", {
         method: "POST",
