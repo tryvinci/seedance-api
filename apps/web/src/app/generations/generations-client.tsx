@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { formatUsd } from "@seedance/models";
 import { getApiBaseUrl } from "@/lib/api-base";
+import { AccountNav } from "@/components/account-nav";
 
 type Generation = {
   id: string;
@@ -91,7 +92,7 @@ export function GenerationsClient() {
         <div>
           <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-soft">
             <Link href="/dashboard" className="hover:text-ink">
-              Dashboard
+              Account
             </Link>
             <span className="mx-2">/</span>
             Generations
@@ -105,28 +106,31 @@ export function GenerationsClient() {
             expire after about a week — download anything you need to keep.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <label
-            htmlFor="page-size"
-            className="font-mono text-[11px] uppercase tracking-wider text-ink-soft"
-          >
-            Per page
-          </label>
-          <select
-            id="page-size"
-            value={limit}
-            onChange={(e) => {
-              setPage(0);
-              setLimit(Number(e.target.value) as (typeof PAGE_SIZES)[number]);
-            }}
-            className="rounded-lg border border-paper-edge bg-white px-3 py-2 text-sm text-ink outline-none focus:border-accent"
-          >
-            {PAGE_SIZES.map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
+        <div className="flex flex-col items-end gap-3">
+          <AccountNav />
+          <div className="flex items-center gap-2">
+            <label
+              htmlFor="page-size"
+              className="font-mono text-[11px] uppercase tracking-wider text-ink-soft"
+            >
+              Per page
+            </label>
+            <select
+              id="page-size"
+              value={limit}
+              onChange={(e) => {
+                setPage(0);
+                setLimit(Number(e.target.value) as (typeof PAGE_SIZES)[number]);
+              }}
+              className="rounded-lg border border-paper-edge bg-white px-3 py-2 text-sm text-ink outline-none focus:border-accent"
+            >
+              {PAGE_SIZES.map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 

@@ -9,6 +9,9 @@ import type {
 
 const WAVESPEED_BASE = "https://api.wavespeed.ai/api/v3";
 
+/** Account volume discount on upstream list price (passed through to retail). */
+const WAVESPEED_ACCOUNT_DISCOUNT = 0.15;
+
 export class WaveSpeedClient {
   constructor(private config: ProviderConfig) {}
 
@@ -46,11 +49,11 @@ export class WaveSpeedClient {
     });
   }
 
-  /** Quote USD cost for one inference with the given inputs. */
+  /** Quote upstream list + net USD for one inference. */
   async quotePricing(
     modelId: string,
     inputs: Record<string, unknown>,
-  ): Promise<number> {
+  ): Promise<{ listCostUsd: number; costUsd: number }> {
     const res = await fetch(`${WAVESPEED_BASE}/model/pricing`, {
       method: "POST",
       headers: this.headers(),
@@ -65,7 +68,7 @@ export class WaveSpeedClient {
     let data: {
       code?: number;
       message?: string;
-      data?: { unit_price?: number };
+      data?: { unit_price?: number; origin_price?: number };
     };
     try {
       data = JSON.parse(text) as typeof data;
@@ -83,7 +86,21 @@ export class WaveSpeedClient {
     if (typeof unitPrice !== "number" || unitPrice <= 0) {
       throw new Error("WaveSpeed pricing: missing unit_price");
     }
-    return unitPrice;
+
+    const originPrice = data.data?.origin_price;
+    const listCostUsd =
+      typeof originPrice === "number" && originPrice > 0
+        ? originPrice
+        : unitPrice;
+    const costUsd =
+      typeof originPrice === "number" &&
+      originPrice > unitPrice &&
+      unitPrice > 0
+        ? unitPrice
+        : Math.round(listCostUsd * (1 - WAVESPEED_ACCOUNT_DISCOUNT) * 100) /
+          100;
+
+    return { listCostUsd, costUsd };
   }
 
   /** Fetch actual billed amount for a completed prediction. */

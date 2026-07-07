@@ -85,6 +85,54 @@ export function retailCreditsFromCosts(
   };
 }
 
+/** User-facing price: what you pay, plus an optional higher reference price. */
+export interface PublicPrice {
+  priceUsd: number;
+  compareAtUsd: number | null;
+}
+
+export function buildPublicPrice(
+  model: ModelDefinition,
+  catalogCredits: number,
+  providerCostUsd: number | null,
+  providerListCostUsd?: number | null,
+): PublicPrice & {
+  retailCredits: number;
+  marginUsd: number | null;
+  markup: number | null;
+} {
+  const retail = retailCreditsFromCosts(model, catalogCredits, providerCostUsd);
+  if (providerCostUsd == null || providerCostUsd <= 0) {
+    return {
+      priceUsd: retail.retailUsd,
+      compareAtUsd: null,
+      retailCredits: retail.retailCredits,
+      marginUsd: retail.marginUsd,
+      markup: retail.markup,
+    };
+  }
+
+  const markup = providerMarkup(model);
+  const catalogUsd = creditsToUsd(catalogCredits);
+  const listCostUsd = Math.max(
+    providerListCostUsd ?? providerCostUsd,
+    providerCostUsd,
+  );
+  const referenceUsd = roundUpUsd(
+    Math.max(catalogUsd, roundUpUsd(listCostUsd * (1 + markup))),
+  );
+  const compareAtUsd =
+    referenceUsd > retail.retailUsd ? referenceUsd : null;
+
+  return {
+    priceUsd: retail.retailUsd,
+    compareAtUsd,
+    retailCredits: retail.retailCredits,
+    marginUsd: retail.marginUsd,
+    markup: retail.markup,
+  };
+}
+
 /** Prepaid balance packs (USD). Credits stored as cents. */
 export const CREDIT_PACKS: CreditPack[] = [
   { id: "starter", name: "Starter", credits: usdToCredits(5), priceUsd: 5 },

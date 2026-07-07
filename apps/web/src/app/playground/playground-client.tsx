@@ -7,11 +7,10 @@ import {
   listModels,
   getModel,
   formatPrice,
-  chargeUsd,
-  formatUsd,
   type ModelDefinition,
 } from "@seedance/models";
 import { getApiBaseUrl } from "@/lib/api-base";
+import { PriceDisplay } from "@/components/price-display";
 
 type Kind = "video" | "image";
 
@@ -141,7 +140,10 @@ export function PlaygroundClient() {
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [generationId, setGenerationId] = useState<string | null>(null);
   const [charged, setCharged] = useState<number | null>(null);
-  const [quotedPrice, setQuotedPrice] = useState<number | null>(null);
+  const [pricePreview, setPricePreview] = useState<{
+    priceUsd: number;
+    compareAtUsd: number | null;
+  } | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -153,13 +155,6 @@ export function PlaygroundClient() {
       return [];
     });
   }, [modelId]);
-
-  const estimate = model
-    ? kind === "video"
-      ? chargeUsd(model, { duration })
-      : model.priceUsd
-    : 0;
-  const displayPrice = quotedPrice ?? estimate;
 
   const mediaReady =
     !mediaSlot?.required || mediaItems.length > 0;
@@ -264,7 +259,7 @@ export function PlaygroundClient() {
 
   useEffect(() => {
     if (!model || !prompt.trim()) {
-      setQuotedPrice(null);
+      setPricePreview(null);
       return;
     }
 
@@ -295,10 +290,16 @@ export function PlaygroundClient() {
         if (!text || cancelled) return;
         const data = JSON.parse(text) as Record<string, unknown>;
         if (res.ok && typeof data.price_usd === "number") {
-          setQuotedPrice(data.price_usd);
+          setPricePreview({
+            priceUsd: data.price_usd,
+            compareAtUsd:
+              typeof data.compare_at_usd === "number"
+                ? data.compare_at_usd
+                : null,
+          });
         }
       } catch {
-        if (!cancelled) setQuotedPrice(null);
+        if (!cancelled) setPricePreview(null);
       } finally {
         if (!cancelled) setQuoteLoading(false);
       }
@@ -330,7 +331,9 @@ export function PlaygroundClient() {
       if (data.status === "completed" && data.output_url) {
         setResultUrl(String(data.output_url));
         setCharged(
-          typeof data.price_usd === "number" ? data.price_usd : estimate,
+          typeof data.price_usd === "number"
+            ? data.price_usd
+            : pricePreview?.priceUsd ?? 0,
         );
         setStatus("completed");
         return;
@@ -377,7 +380,9 @@ export function PlaygroundClient() {
         }
         setGenerationId(String(data.id));
         setCharged(
-          typeof data.price_usd === "number" ? data.price_usd : estimate,
+          typeof data.price_usd === "number"
+            ? data.price_usd
+            : pricePreview?.priceUsd ?? 0,
         );
         await pollGeneration(String(data.id));
       } else {
@@ -402,7 +407,9 @@ export function PlaygroundClient() {
           Array.isArray(urls) && typeof urls[0] === "string" ? urls[0] : null,
         );
         setCharged(
-          typeof data.price_usd === "number" ? data.price_usd : estimate,
+          typeof data.price_usd === "number"
+            ? data.price_usd
+            : pricePreview?.priceUsd ?? 0,
         );
         setStatus("completed");
       }
@@ -604,22 +611,19 @@ export function PlaygroundClient() {
 
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <p className="text-sm text-paper/50">
-                {quoteLoading ? "Pricing…" : "Est."}{" "}
-                <span className="font-medium text-paper">
-                  {formatUsd(displayPrice)}
-                </span>
-                {quotedPrice != null && quotedPrice > estimate && (
-                  <span className="text-paper/40">
-                    {" "}
-                    (live quote; catalog was {formatUsd(estimate)})
-                  </span>
-                )}
-                {kind === "video" && model && quotedPrice == null && (
-                  <span className="text-paper/40">
-                    {" "}
-                    ({duration}s × {formatPrice(model.priceUsd, "second")})
-                  </span>
-                )}
+                {quoteLoading && !pricePreview ? (
+                  "Pricing…"
+                ) : pricePreview ? (
+                  <>
+                    Est.{" "}
+                    <PriceDisplay
+                      priceUsd={pricePreview.priceUsd}
+                      compareAtUsd={pricePreview.compareAtUsd}
+                    />
+                  </>
+                ) : prompt.trim() ? (
+                  "Pricing…"
+                ) : null}
               </p>
               <button
                 type="button"
@@ -690,9 +694,12 @@ export function PlaygroundClient() {
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 px-1 text-sm text-paper/50">
               <span>
                 Charged{" "}
-                <span className="text-paper">
-                  {formatUsd(charged ?? displayPrice)}
-                </span>
+                <PriceDisplay
+                  priceUsd={charged ?? pricePreview?.priceUsd ?? 0}
+                  compareAtUsd={
+                    charged != null ? null : pricePreview?.compareAtUsd
+                  }
+                />
               </span>
               {resultUrl && (
                 <a

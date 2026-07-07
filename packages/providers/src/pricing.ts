@@ -1,9 +1,9 @@
 import {
+  buildPublicPrice,
   chargeCredits,
   chargeUsd,
   getWavespeedPaths,
   resolveModel,
-  retailCreditsFromCosts,
   usdToCredits,
   type ModelDefinition,
 } from "@seedance/models";
@@ -18,8 +18,10 @@ import type {
 export interface GenerationQuote {
   retailCredits: number;
   retailUsd: number;
+  compareAtUsd: number | null;
   catalogUsd: number;
   providerCostUsd: number | null;
+  providerListCostUsd: number | null;
   providerCostCredits: number | null;
   marginUsd: number | null;
   markup: number | null;
@@ -78,7 +80,7 @@ async function quoteWaveSpeed(
   client: WaveSpeedClient,
   model: ModelDefinition,
   params: VideoParams | ImageParams,
-): Promise<{ costUsd: number; modelPath: string }> {
+): Promise<{ costUsd: number; listCostUsd: number; modelPath: string }> {
   const paths = getWavespeedPaths(model);
   if (paths.length === 0) {
     throw new Error("No WaveSpeed path configured");
@@ -92,8 +94,8 @@ async function quoteWaveSpeed(
   let lastError: Error | undefined;
   for (const modelPath of paths) {
     try {
-      const costUsd = await client.quotePricing(modelPath, inputs);
-      return { costUsd, modelPath };
+      const { listCostUsd, costUsd } = await client.quotePricing(modelPath, inputs);
+      return { costUsd, listCostUsd, modelPath };
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       console.warn(`WaveSpeed pricing miss (${modelPath}):`, lastError.message);
@@ -127,17 +129,27 @@ export async function quoteGeneration(
   if (wsPaths.length > 0 && keys.wavespeed && config.wavespeedApiKey?.trim()) {
     try {
       const client = new WaveSpeedClient(config);
-      const { costUsd, modelPath } = await quoteWaveSpeed(client, model, params);
-      const providerCostCredits = usdToCredits(costUsd);
-      const retail = retailCreditsFromCosts(model, catalogCredits, costUsd);
+      const { costUsd, listCostUsd, modelPath } = await quoteWaveSpeed(
+        client,
+        model,
+        params,
+      );
+      const priced = buildPublicPrice(
+        model,
+        catalogCredits,
+        costUsd,
+        listCostUsd,
+      );
       return {
-        retailCredits: retail.retailCredits,
-        retailUsd: retail.retailUsd,
+        retailCredits: priced.retailCredits,
+        retailUsd: priced.priceUsd,
+        compareAtUsd: priced.compareAtUsd,
         catalogUsd,
         providerCostUsd: costUsd,
-        providerCostCredits,
-        marginUsd: retail.marginUsd,
-        markup: retail.markup,
+        providerListCostUsd: listCostUsd,
+        providerCostCredits: usdToCredits(costUsd),
+        marginUsd: priced.marginUsd,
+        markup: priced.markup,
         provider: "wavespeed",
         providerModelPath: modelPath,
       };
@@ -147,14 +159,17 @@ export async function quoteGeneration(
   }
 
   if (model.providers.modelark && keys.modelark && config.modelarkApiKey?.trim()) {
+    const priced = buildPublicPrice(model, catalogCredits, null);
     return {
-      retailCredits: catalogCredits,
-      retailUsd: catalogUsd,
+      retailCredits: priced.retailCredits,
+      retailUsd: priced.priceUsd,
+      compareAtUsd: priced.compareAtUsd,
       catalogUsd,
       providerCostUsd: null,
+      providerListCostUsd: null,
       providerCostCredits: null,
-      marginUsd: null,
-      markup: null,
+      marginUsd: priced.marginUsd,
+      markup: priced.markup,
       provider: "modelark",
       providerModelPath: model.providers.modelark,
     };

@@ -25,8 +25,8 @@ export default function PricingPage() {
           Pricing
         </h1>
         <p className="mt-4 text-ink-soft">
-          Prepaid USD balance. Each generation is charged at the model list
-          price. No subscriptions.
+          Prepaid USD balance. You see the price before each generation. No
+          subscriptions.
         </p>
       </div>
 

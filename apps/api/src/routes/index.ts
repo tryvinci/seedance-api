@@ -162,14 +162,8 @@ app.post("/v1/quote", authMiddleware, async (c) => {
     );
     return c.json({
       model: modelId,
-      price_usd: quote.retailUsd,
       price_unit: model.priceUnit,
-      catalog_usd: quote.catalogUsd,
-      provider_cost_usd: quote.providerCostUsd,
-      margin_usd: quote.marginUsd,
-      markup: quote.markup ?? undefined,
-      provider: quote.provider,
-      provider_model_path: quote.providerModelPath,
+      ...publicPriceFields(quote),
     });
   } catch (err) {
     return c.json(
@@ -289,9 +283,8 @@ app.post("/v1/videos", authMiddleware, async (c) => {
       return c.json(
         {
           error: "Insufficient balance",
-          price_usd: costUsd,
           price_unit: model.priceUnit,
-          provider_cost_usd: quote.providerCostUsd,
+          ...publicPriceFields(quote),
         },
         402,
       );
@@ -442,9 +435,8 @@ app.post("/v1/images", authMiddleware, async (c) => {
       return c.json(
         {
           error: "Insufficient balance",
-          price_usd: costUsd,
           price_unit: model.priceUnit,
-          provider_cost_usd: quote.providerCostUsd,
+          ...publicPriceFields(quote),
         },
         402,
       );
@@ -611,6 +603,19 @@ app.get("/v1/media/*", async (c) => {
   return new Response(obj.body, { headers });
 });
 
+function publicPriceFields(quote: {
+  retailUsd: number;
+  compareAtUsd: number | null;
+}) {
+  const body: { price_usd: number; compare_at_usd?: number } = {
+    price_usd: quote.retailUsd,
+  };
+  if (quote.compareAtUsd != null && quote.compareAtUsd > quote.retailUsd) {
+    body.compare_at_usd = quote.compareAtUsd;
+  }
+  return body;
+}
+
 function formatGeneration(gen: {
   id: string;
   status: string;
@@ -618,28 +623,17 @@ function formatGeneration(gen: {
   kind: string;
   outputUrl: string | null;
   creditsCost: number;
-  providerCostCredits?: number | null;
   error: string | null;
   createdAt: string;
   updatedAt: string;
 }) {
-  const priceUsd = creditsToUsd(gen.creditsCost);
-  const providerCostUsd =
-    gen.providerCostCredits != null
-      ? creditsToUsd(gen.providerCostCredits)
-      : null;
   return {
     id: gen.id,
     status: gen.status,
     model: gen.canonicalModel,
     kind: gen.kind,
     output_url: gen.outputUrl,
-    price_usd: priceUsd,
-    provider_cost_usd: providerCostUsd,
-    margin_usd:
-      providerCostUsd != null
-        ? Math.round((priceUsd - providerCostUsd) * 100) / 100
-        : null,
+    price_usd: creditsToUsd(gen.creditsCost),
     error: gen.error,
     created_at: gen.createdAt,
     updated_at: gen.updatedAt,

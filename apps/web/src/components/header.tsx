@@ -40,12 +40,6 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <a
-            href={getDocsUrl()}
-            className="hidden rounded-full px-4 py-2 text-sm text-ink-soft transition hover:bg-paper-2 hover:text-ink sm:inline-block"
-          >
-            Docs
-          </a>
           <HeaderAuth />
         </div>
       </div>

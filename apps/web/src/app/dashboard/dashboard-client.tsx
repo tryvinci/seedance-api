@@ -4,11 +4,11 @@ import { APIKeys, useAuth, useUser } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { AddBalanceModal } from "@/components/add-balance-modal";
+import { AccountNav } from "@/components/account-nav";
 import { BuyCreditsButton } from "@/components/buy-credits-button";
 import { CopyButton } from "@/components/copy-button";
 import { formatUsd, formatPrice, getModel, chargeUsd } from "@seedance/models";
 import { getApiBaseUrl } from "@/lib/api-base";
-import { getDocsUrl } from "@/lib/docs-url";
 
 type SnippetLang = "curl" | "javascript" | "python";
 
@@ -245,20 +245,7 @@ print(res.json())`,
             </h1>
             {email && <p className="mt-1 text-sm text-ink-soft">{email}</p>}
           </div>
-          <div className="flex flex-wrap gap-2">
-            <a
-              href={getDocsUrl("/quickstart")}
-              className="inline-flex items-center rounded-full border border-paper-edge bg-white px-4 py-2 text-sm font-medium text-ink-2 transition hover:border-ink-soft hover:bg-paper-2 hover:text-ink"
-            >
-              Docs
-            </a>
-            <Link
-              href="/models"
-              className="inline-flex items-center rounded-full border border-paper-edge bg-white px-4 py-2 text-sm font-medium text-ink-2 transition hover:border-ink-soft hover:bg-paper-2 hover:text-ink"
-            >
-              Models
-            </Link>
-          </div>
+          <AccountNav />
         </header>
 
         {/* Top: Quickstart | Balance — equal height */}
